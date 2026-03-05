@@ -1140,22 +1140,25 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       abortControllerRef.current = new AbortController()
 
       try {
-        // Phase 1 — opinions
+        // Phase 1 — opinions (per-member sequential calls)
         initStatuses(setOpStatus, membersToUse)
-        setIsLoading(true)
-        const opData = await callAPI('opinions', {
-          question,
-          selectedMembers: membersToUse.map(m => m.id),
-          previousRounds: {},
-          speed,
-        }, abortControllerRef.current.signal)
-        setIsLoading(false)
-        for (const result of opData.results as Array<{ memberId: string; text: string }>) {
+        for (const member of membersToUse) {
           if (debateAborted.current) break
-          storedRounds.current.opinions[result.memberId] = result.text
-          setOpStatus(p => ({ ...p, [result.memberId]: 'active' }))
-          await typeInto(setOpTexts, result.memberId, renderMarkdown(result.text))
-          setOpStatus(p => ({ ...p, [result.memberId]: 'done' }))
+          setOpStatus(p => ({ ...p, [member.id]: 'active' }))
+          try {
+            const data = await callAPI('member-opinion', {
+              memberId: member.id,
+              question,
+              speed,
+            }, abortControllerRef.current.signal)
+            storedRounds.current.opinions[member.id] = data.text
+            await typeInto(setOpTexts, member.id, renderMarkdown(data.text))
+          } catch {
+            const errText = '[Erro: timeout ou falha na conexão]'
+            storedRounds.current.opinions[member.id] = errText
+            setOpTexts(p => ({ ...p, [member.id]: errText }))
+          }
+          setOpStatus(p => ({ ...p, [member.id]: 'done' }))
           await sleep(150)
         }
 
@@ -1173,20 +1176,24 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           if (debateAborted.current) throw new Error('AbortError')
           setPhase("debate")
           initStatuses(setDebStatus, membersToUse)
-          setIsLoading(true)
-          const debData = await callAPI('debate', {
-            question,
-            selectedMembers: membersToUse.map(m => m.id),
-            previousRounds: { opinions: storedRounds.current.opinions },
-            speed,
-          }, abortControllerRef.current.signal)
-          setIsLoading(false)
-          for (const result of debData.results as Array<{ memberId: string; text: string }>) {
+          for (const member of membersToUse) {
             if (debateAborted.current) break
-            storedRounds.current.debate[result.memberId] = result.text
-            setDebStatus(p => ({ ...p, [result.memberId]: 'active' }))
-            await typeInto(setDebTexts, result.memberId, renderMarkdown(result.text))
-            setDebStatus(p => ({ ...p, [result.memberId]: 'done' }))
+            setDebStatus(p => ({ ...p, [member.id]: 'active' }))
+            try {
+              const data = await callAPI('member-debate', {
+                memberId: member.id,
+                question,
+                speed,
+                allOpinions: storedRounds.current.opinions,
+              }, abortControllerRef.current.signal)
+              storedRounds.current.debate[member.id] = data.text
+              await typeInto(setDebTexts, member.id, renderMarkdown(data.text))
+            } catch {
+              const errText = '[Erro: timeout ou falha na conexão]'
+              storedRounds.current.debate[member.id] = errText
+              setDebTexts(p => ({ ...p, [member.id]: errText }))
+            }
+            setDebStatus(p => ({ ...p, [member.id]: 'done' }))
             await sleep(150)
           }
 
@@ -1204,20 +1211,25 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             if (debateAborted.current) throw new Error('AbortError')
             setPhase("replica")
             initStatuses(setRepStatus, membersToUse)
-            setIsLoading(true)
-            const repData = await callAPI('replica', {
-              question,
-              selectedMembers: membersToUse.map(m => m.id),
-              previousRounds: { opinions: storedRounds.current.opinions, debate: storedRounds.current.debate },
-              speed,
-            }, abortControllerRef.current.signal)
-            setIsLoading(false)
-            for (const result of repData.results as Array<{ memberId: string; text: string }>) {
+            for (const member of membersToUse) {
               if (debateAborted.current) break
-              storedRounds.current.replica[result.memberId] = result.text
-              setRepStatus(p => ({ ...p, [result.memberId]: 'active' }))
-              await typeInto(setRepTexts, result.memberId, renderMarkdown(result.text))
-              setRepStatus(p => ({ ...p, [result.memberId]: 'done' }))
+              setRepStatus(p => ({ ...p, [member.id]: 'active' }))
+              try {
+                const data = await callAPI('member-replica', {
+                  memberId: member.id,
+                  question,
+                  speed,
+                  allOpinions: storedRounds.current.opinions,
+                  allDebates: storedRounds.current.debate,
+                }, abortControllerRef.current.signal)
+                storedRounds.current.replica[member.id] = data.text
+                await typeInto(setRepTexts, member.id, renderMarkdown(data.text))
+              } catch {
+                const errText = '[Erro: timeout ou falha na conexão]'
+                storedRounds.current.replica[member.id] = errText
+                setRepTexts(p => ({ ...p, [member.id]: errText }))
+              }
+              setRepStatus(p => ({ ...p, [member.id]: 'done' }))
               await sleep(150)
             }
 
@@ -1235,20 +1247,26 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               if (debateAborted.current) throw new Error('AbortError')
               setPhase("treplica")
               initStatuses(setTreStatus, membersToUse)
-              setIsLoading(true)
-              const treData = await callAPI('treplica', {
-                question,
-                selectedMembers: membersToUse.map(m => m.id),
-                previousRounds: { opinions: storedRounds.current.opinions, debate: storedRounds.current.debate, replica: storedRounds.current.replica },
-                speed,
-              }, abortControllerRef.current.signal)
-              setIsLoading(false)
-              for (const result of treData.results as Array<{ memberId: string; text: string }>) {
+              for (const member of membersToUse) {
                 if (debateAborted.current) break
-                storedRounds.current.treplica[result.memberId] = result.text
-                setTreStatus(p => ({ ...p, [result.memberId]: 'active' }))
-                await typeInto(setTreTexts, result.memberId, renderMarkdown(result.text))
-                setTreStatus(p => ({ ...p, [result.memberId]: 'done' }))
+                setTreStatus(p => ({ ...p, [member.id]: 'active' }))
+                try {
+                  const data = await callAPI('member-treplica', {
+                    memberId: member.id,
+                    question,
+                    speed,
+                    allOpinions: storedRounds.current.opinions,
+                    allDebates: storedRounds.current.debate,
+                    allReplicas: storedRounds.current.replica,
+                  }, abortControllerRef.current.signal)
+                  storedRounds.current.treplica[member.id] = data.text
+                  await typeInto(setTreTexts, member.id, renderMarkdown(data.text))
+                } catch {
+                  const errText = '[Erro: timeout ou falha na conexão]'
+                  storedRounds.current.treplica[member.id] = errText
+                  setTreTexts(p => ({ ...p, [member.id]: errText }))
+                }
+                setTreStatus(p => ({ ...p, [member.id]: 'done' }))
                 await sleep(150)
               }
             }

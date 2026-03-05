@@ -6,7 +6,8 @@ export interface ORMessage {
 export async function callOpenRouter(
     model: string,
     messages: ORMessage[],
-    maxTokens = 900
+    maxTokens = 900,
+    timeoutMs = 25000
 ): Promise<string> {
     const apiKey = process.env.OPENROUTER_API_KEY
     if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured')
@@ -25,7 +26,7 @@ export async function callOpenRouter(
             max_tokens: maxTokens,
             temperature: 0.8,
         }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(timeoutMs),
     })
 
     if (!res.ok) {
