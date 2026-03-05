@@ -1,0 +1,26 @@
+﻿app/api/council/debate/route.ts(17,35): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/debate/route.ts(20,90): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/debate/route.ts(21,58): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/replica/route.ts(21,71): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/replica/route.ts(22,62): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/replica/route.ts(26,71): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/replica/route.ts(27,62): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(22,71): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(23,62): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(27,71): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(28,62): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(32,71): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
+app/api/council/treplica/route.ts(33,62): error TS7053: Element implicitly has an 'any' type because expression of type 'MemberId' can't be used to index type '{}'.
+  Property 'claude' does not exist on type '{}'.
