@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MEMBERS, VERDICT_SYSTEM, VERDICT_FORMAT } from '@/lib/personas'
 import { callOpenRouter } from '@/lib/openrouter'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
     try {
         const { question, previousRounds, selectedMembers, presidentId } = await req.json()
@@ -30,7 +32,8 @@ export async function POST(req: NextRequest) {
             1200
         )
         return NextResponse.json({ text })
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 })
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return NextResponse.json({ error: msg }, { status: 500 })
     }
 }

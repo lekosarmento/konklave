@@ -25,6 +25,7 @@ export async function callOpenRouter(
             max_tokens: maxTokens,
             temperature: 0.8,
         }),
+        signal: AbortSignal.timeout(25000),
     })
 
     if (!res.ok) {

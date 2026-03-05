@@ -3,6 +3,8 @@ import { MEMBERS } from '@/lib/personas'
 import { callOpenRouter } from '@/lib/openrouter'
 import { ApiRequest } from '@/lib/types'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
     try {
         const body: ApiRequest = await req.json()
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
         const opinions = previousRounds?.opinions || ({} as Record<string, string>)
         const debates = previousRounds?.debate || ({} as Record<string, string>)
 
-        const results = await Promise.all(
+        const settled = await Promise.allSettled(
             targets.map(async (member) => {
                 let transcript = `Questão em debate: ${question}\n\n`
 
@@ -38,8 +40,16 @@ export async function POST(req: NextRequest) {
                 return { memberId: member.id, text, phase: 'replica' as const }
             })
         )
+
+        const results = settled.map((res, i) =>
+            res.status === 'fulfilled'
+                ? res.value
+                : { memberId: targets[i].id, text: `[Erro: ${res.reason?.message || 'timeout'}]`, phase: 'replica' as const }
+        )
+
         return NextResponse.json({ results })
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 })
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return NextResponse.json({ error: msg }, { status: 500 })
     }
 }
