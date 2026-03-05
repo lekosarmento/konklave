@@ -366,16 +366,17 @@ function HistoryDrawer({ items, onClose, onClear }: {
 }
 
 // ─── FEEDBACK MODAL ───────────────────────────────────────────
-function FeedbackModal({ onClose, verdict, userEmail, question, memberIds }: {
+function FeedbackModal({ onClose, verdict, userEmail, question, memberIds, verdictApproved }: {
   onClose: () => void
   verdict: string
   userEmail: string
   question: string
   memberIds: string[]
+  verdictApproved: boolean | null
 }) {
   const [stars, setStars] = useState(0)
   const [hovered, setHovered] = useState(0)
-  const [comment, setComment] = useState('')
+  const [comentario, setComentario] = useState('')
   const [shareVerdict, setShareVerdict] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -391,10 +392,11 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds }: {
         body: JSON.stringify({
           email: userEmail || null,
           rating: stars,
-          comment: comment.trim() || null,
+          comentario: comentario.trim() || null,
           shared_verdict: shareVerdict ? verdict : null,
           questao: question,
           membros_usados: memberIds,
+          verdict_approved: verdictApproved,
         }),
       })
       if (!feedbackRes.ok) {
@@ -449,15 +451,15 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds }: {
 
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 2, marginBottom: 10 }}>
-            COMENTÁRIO <span style={{ color: "#2A3A4A" }}>· opcional</span>
+            DEIXE UM COMENTÁRIO <span style={{ color: "#2A3A4A" }}>· opcional</span>
           </div>
           <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value.slice(0, 500))}
+            value={comentario}
+            onChange={e => setComentario(e.target.value.slice(0, 500))}
             placeholder="O que você achou do debate?"
             style={{ width: "100%", background: "#0B1018", border: "1px solid #1E2D42", borderRadius: 2, padding: "10px 12px", fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#D4E4F0", outline: "none", resize: "vertical", minHeight: 72, caretColor: "#C8952A", boxSizing: "border-box" }}
           />
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#2A3A4A", textAlign: "right", marginTop: 4 }}>{comment.length}/500</div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#2A3A4A", textAlign: "right", marginTop: 4 }}>{comentario.length}/500</div>
         </div>
 
         <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 28 }}>
@@ -475,7 +477,7 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds }: {
           disabled={!stars || submitting}
           style={{ width: "100%", padding: "13px", background: stars ? "#C8952A" : "#0F1520", color: stars ? "#070910" : "#2A3A4A", border: `1px solid ${stars ? "#C8952A" : "#1E2D42"}`, borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: stars ? "pointer" : "not-allowed", transition: "all 0.2s" }}
         >
-          {submitting ? 'ENVIANDO...' : 'ENVIAR FEEDBACK →'}
+          {submitting ? 'ENVIANDO...' : 'ENVIAR FEEDBACK'}
         </button>
       </div>
     </div>
@@ -765,6 +767,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const [showWelcome, setShowWelcome] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackDone, setFeedbackDone] = useState(false)
+  const [verdictApproved, setVerdictApproved] = useState<boolean | null>(null)
+  const [feedbackToast, setFeedbackToast] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -999,7 +1003,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     setTreTexts({}); setTreStatus({})
     setVerdict(""); setVerdictSummary(""); setVerdictLoading(false)
     setIsLoading(false); setTransitionBanner("")
-    setShowFeedback(false); setFeedbackDone(false)
+    setShowFeedback(false); setFeedbackDone(false); setVerdictApproved(null); setFeedbackToast(false)
     setConvergenceText(''); setMostDivergentText('')
     setElectedPresident(null); setPresidentAIResult(null); setPresidentAIDeciding(false)
     setShowPresidentModal(false); setShowStopModal(false)
@@ -1308,7 +1312,6 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
         previousRounds: storedRounds.current,
       }).then(d => setMostDivergentText(d.text || '')).catch(() => { })
 
-      setShowFeedback(true)
     } catch (e: unknown) {
       setIsLoading(false)
       const msg = e instanceof Error ? e.message : String(e)
@@ -1794,6 +1797,26 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: 32 }}>
               <SectionHeader label="— FASE FINAL · VEREDITO" active={phase === "verdict"} done={phase === "done"} />
               <VerdictPanel text={verdict} loading={verdictLoading} president={electedPresident} />
+              {phase === "done" && verdict && !feedbackDone && (
+                <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                  <button
+                    onClick={() => { setVerdictApproved(true); setShowFeedback(true) }}
+                    style={{ padding: "9px 18px", background: "transparent", color: "#4CAF7D", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4CAF7D'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(76,175,125,0.08)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(76,175,125,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    ✓ VEREDITO APROVADO
+                  </button>
+                  <button
+                    onClick={() => { setVerdictApproved(false); setShowFeedback(true) }}
+                    style={{ padding: "9px 18px", background: "transparent", color: "#E07070", border: "1px solid rgba(224,112,112,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E07070'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(224,112,112,0.08)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(224,112,112,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    ✗ VEREDITO REPROVADO
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1843,12 +1866,14 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                 >
                   COPIAR VEREDITO
                 </button>
-                <button
-                  onClick={feedbackDone ? resetState : () => setShowFeedback(true)}
-                  style={{ padding: "9px 18px", background: "transparent", color: feedbackDone ? "#C8952A" : "#6A8AA8", border: `1px solid ${feedbackDone ? "rgba(200,149,42,0.3)" : "#1E2D42"}`, borderRadius: 2, fontSize: 8, fontFamily: "'Space Mono', monospace", letterSpacing: 2, cursor: "pointer" }}
-                >
-                  {feedbackDone ? "NOVA SESSÃO →" : "AVALIAR SESSÃO →"}
-                </button>
+                {feedbackDone && (
+                  <button
+                    onClick={resetState}
+                    style={{ padding: "9px 18px", background: "transparent", color: "#C8952A", border: "1px solid rgba(200,149,42,0.3)", borderRadius: 2, fontSize: 8, fontFamily: "'Space Mono', monospace", letterSpacing: 2, cursor: "pointer" }}
+                  >
+                    NOVA SESSÃO →
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1882,9 +1907,12 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           userEmail={user.email}
           question={question}
           memberIds={activeMembers.map(m => m.id)}
+          verdictApproved={verdictApproved}
           onClose={() => {
             setShowFeedback(false)
             setFeedbackDone(true)
+            setFeedbackToast(true)
+            setTimeout(() => setFeedbackToast(false), 3000)
             setHistoryItems(JSON.parse(localStorage.getItem('konklave_history') || '[]'))
           }}
         />
@@ -1958,6 +1986,13 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       {shareToast && (
         <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: "#0A0F1A", border: "1px solid rgba(200,149,42,0.5)", borderRadius: 999, padding: "10px 24px", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C8952A", zIndex: 60, letterSpacing: 2, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
           🎖 +1 debate desbloqueado por compartilhar!
+        </div>
+      )}
+
+      {/* FEEDBACK TOAST */}
+      {feedbackToast && (
+        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: "#0A0F1A", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 999, padding: "10px 24px", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#4CAF7D", zIndex: 60, letterSpacing: 2, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
+          Obrigado pelo feedback!
         </div>
       )}
 

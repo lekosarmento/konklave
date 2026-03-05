@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): any {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // POST /api/leads — insert a new lead (called from /cadastro)
 export async function POST(req: NextRequest) {
@@ -18,7 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'nome and email are required' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
+  const supabase = getSupabase()
+  if (!supabase) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 })
+
   console.log('[api/leads] before insert')
   const { data, error } = await supabase.from('leads').insert({
     nome,
@@ -52,7 +65,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'email is required' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
+  const supabase = getSupabase()
+  if (!supabase) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 })
+
   const { error } = await supabase.from('leads').update(updates).eq('email', email)
   if (error) {
     console.error('[api/leads] Supabase update error:', error)
