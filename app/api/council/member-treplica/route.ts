@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MEMBERS } from '@/lib/personas'
-import { callOpenRouter } from '@/lib/openrouter'
+import { callOpenRouterWithRetry } from '@/lib/openrouter'
 
 export const maxDuration = 30
 
@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
 
         const userPrompt = `${transcript}\n\n---\n\nConsidere todo o histórico acima para sua tréplica final.`
 
-        const text = await callOpenRouter(member.model, [
+        const text = await callOpenRouterWithRetry(member.model, [
             { role: 'system', content: member.systemPrompt + '\n\n' + PHASE_TASK },
             { role: 'user', content: userPrompt },
-        ], 900, 8000)
+        ], 900, 25000)
 
         return NextResponse.json({ memberId, text })
     } catch (e: unknown) {
