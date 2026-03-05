@@ -18,12 +18,21 @@ interface Member {
   poweredBy?: string
 }
 
+interface HistoryMember {
+  name: string
+  symbol: string
+  color: string
+}
+
 interface HistoryItem {
   id: string
   question: string
   verdict: string
-  members: string[]
+  members: HistoryMember[]
   date: string
+  category?: string
+  categoryIcon?: string
+  rating?: number | null
 }
 
 type StatusMap = Record<string, string>
@@ -296,16 +305,25 @@ function HistoryDrawer({ items, onClose, onClear }: {
   onClear: () => void
 }) {
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null)
+
+  const formatDate = (iso: string) => {
+    try {
+      const d = new Date(iso)
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+    } catch { return iso }
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 90, display: "flex" }}>
-      {/* Backdrop */}
       <div onClick={onClose} style={{ flex: 1, background: "rgba(4,6,12,0.7)", backdropFilter: "blur(4px)" }} />
-      {/* Sidebar */}
-      <div style={{ width: 380, background: "#0A0F1A", borderLeft: "1px solid rgba(200,149,42,0.2)", display: "flex", flexDirection: "column", animation: "slideInRight 300ms cubic-bezier(0.16,1,0.3,1) both" }}>
+      <div style={{ width: 400, background: "#0A0F1A", borderLeft: "1px solid rgba(200,149,42,0.2)", display: "flex", flexDirection: "column", animation: "slideInRight 300ms cubic-bezier(0.16,1,0.3,1) both" }}>
+        {/* Header */}
         <div style={{ padding: "24px 24px 20px", borderBottom: "1px solid #1E2D42", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0 }}>
           <div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#C8952A", letterSpacing: 3, marginBottom: 6 }}>▸ HISTÓRICO DE DEBATES</div>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#3A5A70" }}>{items.length} sess{items.length === 1 ? 'ão' : 'ões'} salvas</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#E8F0F8", fontWeight: 700 }}>
+              HISTÓRICO ({items.length})
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             {items.length > 0 && (
@@ -314,35 +332,56 @@ function HistoryDrawer({ items, onClose, onClear }: {
             <button onClick={onClose} style={{ padding: "6px 12px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer" }}>✕</button>
           </div>
         </div>
+
+        {/* List */}
         <div style={{ flex: 1, padding: "16px 20px", overflowY: "auto" }}>
           {items.length === 0 && (
-            <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#3A4A5A", fontStyle: "italic" }}>
-              Nenhuma sessão salva ainda.
+            <div style={{ textAlign: "center", padding: "60px 20px", fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#3A4A5A", fontStyle: "italic", lineHeight: 1.7 }}>
+              Nenhum debate ainda.<br />Convoque seu primeiro conselho.
             </div>
           )}
-          {[...items].reverse().map((item, idx) => {
-            const itemMembers = MEMBERS.filter(m => item.members.includes(m.id)).slice(0, 5)
-            return (
-              <div
-                key={item.id}
-                onClick={() => setSelectedItem(item)}
-                style={{ marginBottom: 12, background: "#0B1018", border: "1px solid #1E2D42", borderLeft: "2px solid rgba(200,149,42,0.3)", borderRadius: 2, padding: "14px 16px", cursor: "pointer", transition: "border-color 0.2s", animation: `cardEntrance 300ms ease-out ${idx * 40}ms both` }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(200,149,42,0.5)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#C8952A' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2D42'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'rgba(200,149,42,0.3)' }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#3A5A70", letterSpacing: 1 }}>{item.date} · {item.members.length} conselheiros</div>
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    {itemMembers.map(m => (
-                      <span key={m.id} style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: m.color }}>{m.symbol}</span>
-                    ))}
-                    {item.members.length > 5 && <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#3A5A70" }}>+{item.members.length - 5}</span>}
-                  </div>
-                </div>
-                <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: "#8AA8C0", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>"{item.question.slice(0, 80)}{item.question.length > 80 ? '...' : ''}"</p>
+          {[...items].reverse().map((item, idx) => (
+            <div
+              key={item.id}
+              onClick={() => setSelectedItem(item)}
+              style={{ marginBottom: 12, background: "#0B1018", border: "1px solid #1E2D42", borderLeft: "2px solid rgba(200,149,42,0.3)", borderRadius: 2, padding: "14px 16px", cursor: "pointer", transition: "all 0.2s", animation: `cardEntrance 300ms ease-out ${idx * 40}ms both` }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'rgba(200,149,42,0.5)'; el.style.borderLeftColor = '#C8952A' }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#1E2D42'; el.style.borderLeftColor = 'rgba(200,149,42,0.3)' }}
+            >
+              {/* Row 1: date + category */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#3A5A70", letterSpacing: 1 }}>{formatDate(item.date)}</div>
+                {item.categoryIcon && item.category && (
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1 }}>{item.categoryIcon} {item.category}</div>
+                )}
               </div>
-            )
-          })}
+
+              {/* Row 2: question */}
+              <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: "#8AA8C0", lineHeight: 1.5, margin: "0 0 8px", fontStyle: "italic" }}>
+                &ldquo;{item.question.slice(0, 70)}{item.question.length > 70 ? '…' : ''}&rdquo;
+              </p>
+
+              {/* Row 3: verdict preview */}
+              <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: "#4A6A80", lineHeight: 1.5, margin: "0 0 10px" }}>
+                {item.verdict.slice(0, 110)}{item.verdict.length > 110 ? '…' : ''}
+              </p>
+
+              {/* Row 4: member pills + stars */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {item.members.slice(0, 6).map((m, i) => (
+                    <span key={i} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: m.color, background: m.color + '18', border: `1px solid ${m.color}44`, borderRadius: 2, padding: "2px 6px", letterSpacing: 0.5 }}>{m.name}</span>
+                  ))}
+                  {item.members.length > 6 && <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: "#3A5A70" }}>+{item.members.length - 6}</span>}
+                </div>
+                {item.rating != null && (
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#C8952A", letterSpacing: 1 }}>
+                    {'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -351,10 +390,22 @@ function HistoryDrawer({ items, onClose, onClear }: {
         <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(4,6,12,0.93)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setSelectedItem(null)}>
           <div
             onClick={e => e.stopPropagation()}
-            style={{ width: "100%", maxWidth: 560, maxHeight: "80vh", background: "#0A0F1A", border: "1px solid rgba(200,149,42,0.3)", borderTop: "3px solid #C8952A", borderRadius: 2, padding: "32px 36px", overflowY: "auto", animation: "modalEntrance 250ms cubic-bezier(0.16,1,0.3,1) both" }}
+            style={{ width: "100%", maxWidth: 560, maxHeight: "85vh", background: "#0A0F1A", border: "1px solid rgba(200,149,42,0.3)", borderTop: "3px solid #C8952A", borderRadius: 2, padding: "32px 36px", overflowY: "auto", animation: "modalEntrance 250ms cubic-bezier(0.16,1,0.3,1) both" }}
           >
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#3A5A70", letterSpacing: 1, marginBottom: 10 }}>{selectedItem.date} · {selectedItem.members.length} conselheiros</div>
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: "#D4E4F0", lineHeight: 1.7, marginBottom: 20, fontStyle: "italic" }}>"{selectedItem.question}"</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#3A5A70", letterSpacing: 1 }}>
+                {formatDate(selectedItem.date)}{selectedItem.category ? ` · ${selectedItem.categoryIcon} ${selectedItem.category}` : ''}
+              </div>
+              {selectedItem.rating != null && (
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C8952A" }}>{'★'.repeat(selectedItem.rating)}{'☆'.repeat(5 - selectedItem.rating)}</div>
+              )}
+            </div>
+            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: "#D4E4F0", lineHeight: 1.7, marginBottom: 16, fontStyle: "italic" }}>&ldquo;{selectedItem.question}&rdquo;</p>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 20 }}>
+              {selectedItem.members.map((m, i) => (
+                <span key={i} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: m.color, background: m.color + '18', border: `1px solid ${m.color}44`, borderRadius: 2, padding: "2px 6px" }}>{m.name}</span>
+              ))}
+            </div>
             <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.25), transparent)", marginBottom: 20 }} />
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#C8952A", letterSpacing: 2, marginBottom: 12 }}>▸ VEREDITO</div>
             <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#8AA8C0", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap" }}>{selectedItem.verdict}</p>
@@ -404,17 +455,12 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds, verdi
         console.error('Feedback error:', errJson)
       }
 
-      // Save to localStorage history
+      // Update rating on the most recent matching history item
       const history: HistoryItem[] = JSON.parse(localStorage.getItem('konklave_history') || '[]')
-      const newItem: HistoryItem = {
-        id: Math.random().toString(36).slice(2, 8).toUpperCase(),
-        question,
-        verdict,
-        members: memberIds,
-        date: new Date().toLocaleDateString('pt-BR'),
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].question === question) { history[i].rating = stars; break }
       }
-      history.push(newItem)
-      localStorage.setItem('konklave_history', JSON.stringify(history.slice(-20)))
+      localStorage.setItem('konklave_history', JSON.stringify(history))
     } catch (e) {
       console.error('Feedback submit error:', e)
     }
@@ -771,6 +817,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const [feedbackToast, setFeedbackToast] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
+  const [showNavGuard, setShowNavGuard] = useState(false)
+  const pendingNavRef = useRef<(() => void) | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [transitionBanner, setTransitionBanner] = useState("")
@@ -843,6 +891,16 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const showAskRep = phase === "ask_replica"
   const showAskTre = phase === "ask_treplica"
   const showTimer = !["idle", "write_question", "select_category", "select_council", "done"].includes(phase)
+  const isDebateActive = showTimer // true during all active debate phases
+
+  const guardedNav = (action: () => void) => {
+    if (isDebateActive) {
+      pendingNavRef.current = action
+      setShowNavGuard(true)
+    } else {
+      action()
+    }
+  }
 
   // Welcome modal
   useEffect(() => {
@@ -884,6 +942,17 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       scrollRef.current.scrollTop = 0
     }
   }, [phase])
+
+  // Prevent accidental navigation during active debate
+  useEffect(() => {
+    if (!isDebateActive) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDebateActive])
 
   // Session timer
   useEffect(() => {
@@ -1004,6 +1073,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     setVerdict(""); setVerdictSummary(""); setVerdictLoading(false)
     setIsLoading(false); setTransitionBanner("")
     setShowFeedback(false); setFeedbackDone(false); setVerdictApproved(null); setFeedbackToast(false)
+    setShowNavGuard(false); pendingNavRef.current = null
     setConvergenceText(''); setMostDivergentText('')
     setElectedPresident(null); setPresidentAIResult(null); setPresidentAIDeciding(false)
     setShowPresidentModal(false); setShowStopModal(false)
@@ -1313,6 +1383,23 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       await typeVerdict(renderMarkdown(verdictData.text))
       setPhase("done")
 
+      // Save to history immediately on verdict completion
+      const cat = CATEGORIES.find(c => c.id === selectedCategory)
+      const newHistoryItem: HistoryItem = {
+        id: String(Date.now()),
+        date: new Date().toISOString(),
+        question,
+        verdict: renderMarkdown(verdictData.text),
+        members: membersToUse.map(m => ({ name: m.name, symbol: m.symbol, color: m.color })),
+        category: cat?.label || '',
+        categoryIcon: cat?.icon || '',
+        rating: null,
+      }
+      const prevHistory: HistoryItem[] = JSON.parse(localStorage.getItem('konklave_history') || '[]')
+      const updatedHistory = [...prevHistory, newHistoryItem].slice(-20)
+      localStorage.setItem('konklave_history', JSON.stringify(updatedHistory))
+      setHistoryItems(updatedHistory)
+
       // Non-blocking verdict summary for share cards
       callAPI('utility', {
         action: 'summarizeVerdict',
@@ -1417,9 +1504,9 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button
-              onClick={() => setShowHistory(true)}
+              onClick={() => guardedNav(() => setShowHistory(true))}
               style={{ background: "transparent", border: "none", color: "#3A5A70", fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer", padding: "4px 8px" }}
-            >HISTÓRICO</button>
+            >HISTÓRICO {historyItems.length > 0 ? `(${historyItems.length})` : ''}</button>
             <div
               title="Todos os recursos gratuitos por tempo limitado"
               style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, cursor: "default" }}
@@ -1985,6 +2072,37 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                 style={{ width: "100%", padding: "13px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: "pointer" }}
               >
                 CONTINUAR DEBATE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NAV GUARD MODAL */}
+      {showNavGuard && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(4,6,12,0.93)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ width: "100%", maxWidth: 440, background: "#0A0F1A", border: "1px solid rgba(200,149,42,0.3)", borderTop: "3px solid #C8952A", borderRadius: 2, padding: "36px 36px 32px", animation: "modalEntrance 250ms cubic-bezier(0.16,1,0.3,1) both" }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#C8952A", letterSpacing: 3, marginBottom: 16 }}>▸ DEBATE EM ANDAMENTO</div>
+            <h3 style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 18, color: "#E8F0F8", marginBottom: 16, lineHeight: 1.3 }}>Tem certeza que deseja sair?</h3>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", lineHeight: 1.7, marginBottom: 32, letterSpacing: 0.5 }}>
+              Seu debate está em andamento. O progresso será perdido.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => { setShowNavGuard(false); pendingNavRef.current = null }}
+                style={{ flex: 1, padding: "13px", background: "#C8952A", color: "#070910", border: "none", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: 2, cursor: "pointer" }}
+              >
+                CONTINUAR DEBATE
+              </button>
+              <button
+                onClick={() => {
+                  setShowNavGuard(false)
+                  pendingNavRef.current?.()
+                  pendingNavRef.current = null
+                }}
+                style={{ flex: 1, padding: "13px", background: "transparent", color: "#E05A5A", border: "1px solid rgba(224,90,90,0.4)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer" }}
+              >
+                SAIR MESMO ASSIM
               </button>
             </div>
           </div>
