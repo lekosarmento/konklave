@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import type { Dispatch, SetStateAction } from "react"
-import { supabase } from "@/lib/supabase"
 
 // ─── TYPES ────────────────────────────────────────────────────
 interface Member {
@@ -386,16 +385,22 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds }: {
     if (!stars) return
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('feedbacks').insert({
-        email: userEmail || null,
-        rating: stars,
-        comment: comment.trim() || null,
-        shared_verdict: shareVerdict ? verdict : null,
-        questao: question,
-        membros_usados: memberIds,
-        criado_em: new Date().toISOString(),
+      const feedbackRes = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail || null,
+          rating: stars,
+          comment: comment.trim() || null,
+          shared_verdict: shareVerdict ? verdict : null,
+          questao: question,
+          membros_usados: memberIds,
+        }),
       })
-      if (error) console.error('Feedback error:', error)
+      if (!feedbackRes.ok) {
+        const errJson = await feedbackRes.json().catch(() => ({}))
+        console.error('Feedback error:', errJson)
+      }
 
       // Save to localStorage history
       const history: HistoryItem[] = JSON.parse(localStorage.getItem('konklave_history') || '[]')
@@ -787,6 +792,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const [treTexts, setTreTexts] = useState<TextMap>({})
   const [treStatus, setTreStatus] = useState<StatusMap>({})
   const [verdict, setVerdict] = useState("")
+  const [verdictSummary, setVerdictSummary] = useState("")
   const [verdictLoading, setVerdictLoading] = useState(false)
   const [error, setError] = useState("")
   const [elapsed, setElapsed] = useState(0)
@@ -991,7 +997,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     setDebTexts({}); setDebStatus({})
     setRepTexts({}); setRepStatus({})
     setTreTexts({}); setTreStatus({})
-    setVerdict(""); setVerdictLoading(false)
+    setVerdict(""); setVerdictSummary(""); setVerdictLoading(false)
     setIsLoading(false); setTransitionBanner("")
     setShowFeedback(false); setFeedbackDone(false)
     setConvergenceText(''); setMostDivergentText('')
@@ -1042,8 +1048,11 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
         setShareToast(true)
         setTimeout(() => setShareToast(false), 3500)
       }
-      supabase.from('leads').update({ shares_count: newCount }).eq('email', user.email)
-        .then(({ error }) => { if (error) console.error('Supabase share error:', error) })
+      fetch('/api/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, shares_count: newCount }),
+      }).then(r => { if (!r.ok) r.json().then(e => console.error('Supabase share error:', e)) })
     } catch (e) {
       console.error('Share error:', e)
     }
@@ -1108,8 +1117,11 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     userData.usos = (userData.usos || 0) + 1
     localStorage.setItem('konklave_user', JSON.stringify(userData))
     setUsos(userData.usos)
-    supabase.from('leads').update({ usos: userData.usos }).eq('email', userData.email)
-      .then(({ error }) => { if (error) console.error('Supabase update error:', error) })
+    fetch('/api/leads', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userData.email, usos: userData.usos }),
+    }).then(r => { if (!r.ok) r.json().then(e => console.error('Supabase update error:', e)) })
 
     setPhase("opinions"); setElapsed(0); setError("")
     setOpTexts({}); setOpStatus({})
@@ -1278,6 +1290,15 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       setVerdictLoading(false)
       await typeVerdict(renderMarkdown(verdictData.text))
       setPhase("done")
+
+      // Non-blocking verdict summary for share cards
+      callAPI('utility', {
+        action: 'summarizeVerdict',
+        verdictText: verdictData.text,
+        question,
+        selectedMembers: membersToUse.map(m => m.id),
+        previousRounds: storedRounds.current,
+      }).then(d => setVerdictSummary(d.text || '')).catch(() => {})
 
       // Non-blocking most divergent after verdict
       callAPI('utility', {
@@ -1944,53 +1965,148 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       {phase === "done" && verdict && (
         <>
           {/* Story 9:16 — 400×711 */}
-          <div ref={shareCardStoryRef} style={{ position: "fixed", left: -10000, top: 0, width: 400, height: 711, background: "#080C14", padding: "40px 32px", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Space Mono', monospace" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#C8952A", letterSpacing: 4, marginBottom: 28 }}>KONKLAVE</div>
-            {selectedCategory && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-                <span style={{ fontSize: 20, color: "#C8952A" }}>{CATEGORIES.find(c => c.id === selectedCategory)?.icon}</span>
-                <span style={{ fontSize: 9, color: "#6A8AA8", letterSpacing: 2 }}>{CATEGORIES.find(c => c.id === selectedCategory)?.label?.toUpperCase()}</span>
-              </div>
-            )}
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: "#D4E4F0", lineHeight: 1.6, marginBottom: 20, fontStyle: "italic", flexShrink: 0 }}>
-              "{question.slice(0, 120)}{question.length > 120 ? '...' : ''}"
-            </p>
-            <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.4), transparent)", marginBottom: 20, flexShrink: 0 }} />
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: "#8AA8C0", lineHeight: 1.7, flex: 1, overflow: "hidden" }}>
-              {verdict.slice(0, 200)}{verdict.length > 200 ? '...' : ''}
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20, flexShrink: 0 }}>
+          <div
+            ref={shareCardStoryRef}
+            style={{
+              position: "fixed", left: -10000, top: 0,
+              width: 400, height: 711,
+              background: "#080C14",
+              border: "1px solid rgba(200,149,42,0.15)",
+              padding: "36px",
+              boxSizing: "border-box",
+              display: "flex", flexDirection: "column",
+              fontFamily: "'Space Mono', monospace",
+            }}
+          >
+            {/* Top — KONKLAVE + category */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700, color: "#C8952A", letterSpacing: 4 }}>KONKLAVE</span>
+              {selectedCategory && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 14, color: "#C8952A" }}>{CATEGORIES.find(c => c.id === selectedCategory)?.icon}</span>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 2 }}>{CATEGORIES.find(c => c.id === selectedCategory)?.label?.toUpperCase()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Question with gold left border */}
+            <div style={{ borderLeft: "3px solid #C8952A", paddingLeft: 14, marginBottom: 18, flexShrink: 0 }}>
+              <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 15, color: "#C0D0DC", lineHeight: 1.7, margin: 0, fontStyle: "italic" }}>
+                &ldquo;{question.slice(0, 100)}{question.length > 100 ? '...' : ''}&rdquo;
+              </p>
+            </div>
+
+            {/* Gold divider */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.6), transparent)", marginBottom: 18, flexShrink: 0 }} />
+
+            {/* Verdict summary */}
+            <div style={{ flex: 1, overflow: "hidden", marginBottom: 18 }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#C8952A", letterSpacing: 3, marginBottom: 10 }}>VEREDITO</div>
+              <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 15, color: "#B8CCE0", lineHeight: 1.8, margin: 0 }}>
+                {verdictSummary || (verdict.slice(0, 180) + (verdict.length > 180 ? '...' : ''))}
+              </p>
+            </div>
+
+            {/* Member chips */}
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 18, flexShrink: 0 }}>
               {activeMembers.slice(0, 8).map(m => (
-                <div key={m.id} style={{ width: 28, height: 28, borderRadius: 2, background: m.color + "20", border: `1px solid ${m.color}66`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: m.color }}>
-                  {m.symbol}
+                <div key={m.id} style={{
+                  background: m.color + "1E",
+                  border: `1px solid ${m.color}4D`,
+                  borderRadius: 4,
+                  padding: "6px 10px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                }}>
+                  <span style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: m.color }}>{m.symbol}</span>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8" }}>{m.name.slice(0, 7)}</span>
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 9, color: "#3A5A70", letterSpacing: 2, flexShrink: 0 }}>konklave.app</div>
+
+            {/* CTA */}
+            <div style={{ flexShrink: 0, borderTop: "1px solid rgba(200,149,42,0.1)", paddingTop: 18 }}>
+              <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: "#C8952A", fontStyle: "italic", marginBottom: 6 }}>
+                Traga sua questão ao Konklave.
+              </div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 2, marginBottom: 12 }}>
+                29 inteligências. Um veredito.
+              </div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#C8952A", letterSpacing: 3 }}>
+                konklave.app
+              </div>
+            </div>
           </div>
 
           {/* Feed 1:1 — 500×500 */}
-          <div ref={shareCardFeedRef} style={{ position: "fixed", left: -10001, top: 0, width: 500, height: 500, background: "#080C14", padding: "40px", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Space Mono', monospace" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#C8952A", letterSpacing: 4 }}>KONKLAVE</div>
-              {selectedCategory && <span style={{ fontSize: 9, color: "#6A8AA8", letterSpacing: 1 }}>{CATEGORIES.find(c => c.id === selectedCategory)?.label}</span>}
+          <div
+            ref={shareCardFeedRef}
+            style={{
+              position: "fixed", left: -10001, top: 0,
+              width: 500, height: 500,
+              background: "#080C14",
+              border: "1px solid rgba(200,149,42,0.15)",
+              padding: "40px",
+              boxSizing: "border-box",
+              display: "flex", flexDirection: "column",
+              fontFamily: "'Space Mono', monospace",
+            }}
+          >
+            {/* Top bar */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, color: "#C8952A", letterSpacing: 4 }}>KONKLAVE</span>
+              {selectedCategory && (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 1 }}>{CATEGORIES.find(c => c.id === selectedCategory)?.label}</span>
+              )}
             </div>
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#D4E4F0", lineHeight: 1.6, marginBottom: 18, fontStyle: "italic", flexShrink: 0 }}>
-              "{question.slice(0, 100)}{question.length > 100 ? '...' : ''}"
+
+            {/* Gold divider */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.6), transparent)", marginBottom: 16, flexShrink: 0 }} />
+
+            {/* Question */}
+            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 16, color: "#C0D0DC", lineHeight: 1.65, marginBottom: 14, fontStyle: "italic", flexShrink: 0 }}>
+              &ldquo;{question.slice(0, 90)}{question.length > 90 ? '...' : ''}&rdquo;
             </p>
-            <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.4), transparent)", marginBottom: 18, flexShrink: 0 }} />
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: "#8AA8C0", lineHeight: 1.7, flex: 1, overflow: "hidden" }}>
-              {verdict.slice(0, 180)}{verdict.length > 180 ? '...' : ''}
-            </p>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                {activeMembers.slice(0, 6).map(m => (
-                  <div key={m.id} style={{ width: 24, height: 24, borderRadius: 2, background: m.color + "20", border: `1px solid ${m.color}66`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 10, color: m.color }}>
-                    {m.symbol}
-                  </div>
-                ))}
+
+            {/* Thin gold divider */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, rgba(200,149,42,0.3), transparent)", marginBottom: 14, flexShrink: 0 }} />
+
+            {/* Verdict summary */}
+            <div style={{ flex: 1, overflow: "hidden", marginBottom: 14 }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#C8952A", letterSpacing: 3, marginBottom: 8 }}>VEREDITO</div>
+              <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 15, color: "#B8CCE0", lineHeight: 1.7, margin: 0 }}>
+                {verdictSummary || (verdict.slice(0, 180) + (verdict.length > 180 ? '...' : ''))}
+              </p>
+            </div>
+
+            {/* Member chips */}
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16, flexShrink: 0 }}>
+              {activeMembers.slice(0, 6).map(m => (
+                <div key={m.id} style={{
+                  background: m.color + "1E",
+                  border: `1px solid ${m.color}4D`,
+                  borderRadius: 4,
+                  padding: "6px 10px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                }}>
+                  <span style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: m.color }}>{m.symbol}</span>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8" }}>{m.name.slice(0, 7)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom CTA */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexShrink: 0 }}>
+              <div>
+                <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#C8952A", fontStyle: "italic", marginBottom: 4 }}>
+                  Traga sua questão.
+                </div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", letterSpacing: 1 }}>
+                  29 inteligências. Um veredito.
+                </div>
               </div>
-              <div style={{ fontSize: 9, color: "#3A5A70", letterSpacing: 2 }}>konklave.app</div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#C8952A", letterSpacing: 2 }}>
+                konklave.app
+              </div>
             </div>
           </div>
         </>

@@ -49,10 +49,11 @@ export interface ApiResponse {
 }
 
 export interface UtilityRequest {
-  action: 'convergence' | 'mostDivergent' | 'electPresident'
+  action: 'convergence' | 'mostDivergent' | 'electPresident' | 'summarizeVerdict'
   question: string
   selectedMembers: MemberId[]
   previousRounds: Partial<Record<string, Record<string, string>>>
+  verdictText?: string
 }
 
 export interface UtilityResponse {

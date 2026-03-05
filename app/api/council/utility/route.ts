@@ -6,7 +6,7 @@ import { UtilityRequest } from '@/lib/types'
 export async function POST(req: NextRequest) {
     try {
         const body: UtilityRequest = await req.json()
-        const { action, question, selectedMembers, previousRounds } = body
+        const { action, question, selectedMembers, previousRounds, verdictText } = body
         const members = MEMBERS.filter(m => selectedMembers.includes(m.id))
         const memberNames = members.map(m => `${m.name} (${m.role})`).join(', ')
 
@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
         } else if (action === 'electPresident') {
             systemPrompt = 'Você é um árbitro imparcial de debates. Responda APENAS em JSON válido, sem texto adicional, sem markdown.'
             userPrompt = `${transcript}\n\nCom base no debate completo entre (${memberNames}), eleja o conselheiro que demonstrou o pensamento mais equilibrado, fundamentado e útil para a decisão final. Responda APENAS com JSON válido: {"presidentId": "[id do membro]", "reason": "[1 frase de justificativa]"}\n\nIDs disponíveis: ${members.map(m => m.id).join(', ')}`
+        } else if (action === 'summarizeVerdict') {
+            systemPrompt = 'Você é um especialista em comunicação. Responda apenas com o resumo solicitado, sem introdução, sem aspas, sem explicações adicionais.'
+            userPrompt = `Resuma este veredito em exatamente 2 frases diretas e impactantes, máximo 180 caracteres no total. Retorne só as frases, sem introdução, sem aspas:\n\n${verdictText || ''}`
         } else {
             return NextResponse.json({ error: 'invalid action' }, { status: 400 })
         }

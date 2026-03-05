@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -11,6 +10,7 @@ export default function CadastroPage() {
   const [email, setEmail] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     const existing = localStorage.getItem('konklave_user')
@@ -23,21 +23,42 @@ export default function CadastroPage() {
     e.preventDefault()
     if (!nome.trim() || !email.trim()) return
     setSubmitting(true)
+    setSubmitError(null)
+    console.log('[cadastro] submitting lead:', { nome: nome.trim(), email: email.trim() })
+
     localStorage.setItem('konklave_user', JSON.stringify({
       nome: nome.trim(),
       email: email.trim(),
       whatsapp: whatsapp.trim(),
       usos: 0,
     }))
-    const { error } = await supabase.from('leads').insert({
-      nome: nome.trim(),
-      email: email.trim(),
-      whatsapp: whatsapp.trim() || null,
-      usos: 0,
-    })
-    if (error) {
-      console.error('Supabase error:', error)
+
+    try {
+      console.log('[cadastro] calling /api/leads')
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: nome.trim(),
+          email: email.trim(),
+          whatsapp: whatsapp.trim() || null,
+        }),
+      })
+      const json = await res.json()
+      console.log('[cadastro] /api/leads response:', res.status, json)
+      if (!res.ok) {
+        console.error('[cadastro] lead insert failed:', json)
+        setSubmitError(`Erro ao salvar: ${json.error || 'erro desconhecido'}`)
+        setSubmitting(false)
+        return
+      }
+    } catch (err) {
+      console.error('[cadastro] fetch error:', err)
+      setSubmitError('Erro de conexão. Tente novamente.')
+      setSubmitting(false)
+      return
     }
+
     router.push('/council')
   }
 
@@ -155,8 +176,24 @@ export default function CadastroPage() {
                     boxShadow: '0 0 28px rgba(200,149,42,0.2)',
                   }}
                 >
-                  {submitting ? 'REDIRECIONANDO...' : 'ACESSAR O KONKLAVE →'}
+                  {submitting ? 'SALVANDO...' : 'ACESSAR O KONKLAVE →'}
                 </button>
+
+                {submitError && (
+                  <div style={{
+                    marginTop: 16,
+                    padding: '10px 14px',
+                    background: 'rgba(200,60,60,0.1)',
+                    border: '1px solid rgba(200,60,60,0.3)',
+                    borderRadius: 2,
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: 11,
+                    color: '#E87070',
+                    letterSpacing: 0.5,
+                  }}>
+                    {submitError}
+                  </div>
+                )}
               </form>
             </div>
 
