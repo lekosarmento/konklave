@@ -5,7 +5,7 @@ export const MEMBERS: Member[] = [
   {
     id: 'claude',
     name: 'CLAUDE',
-    model: 'anthropic/claude-sonnet-4-5',
+    model: 'anthropic/claude-haiku-4-5-20251001',
     role: 'O Filósofo',
     color: '#C8952A',
     symbol: 'Φ',
@@ -22,7 +22,7 @@ Português brasileiro.`,
   {
     id: 'gpt',
     name: 'GPT-4o',
-    model: 'openai/gpt-4o',
+    model: 'openai/gpt-4o-mini',
     role: 'O Executivo',
     color: '#3DAA6E',
     symbol: 'Σ',

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
             : VERDICT_SYSTEM
 
         const text = await callOpenRouter(
-            president ? president.model : 'anthropic/claude-sonnet-4-5',
+            president ? president.model : 'anthropic/claude-haiku-4-5-20251001',
             [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `QUESTÃO:\n"${question}"\n\nTRANSCRIÇÃO:\n\n${transcript}\n\n${VERDICT_FORMAT}` },
