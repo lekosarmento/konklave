@@ -662,10 +662,10 @@ function SelectionCard({ member, selected, onToggle, canDeselect }: {
         }}>✓</div>
       </div>
       <div style={{ height: 1, background: `linear-gradient(90deg, ${selected ? member.color + "33" : member.color + "22"}, transparent)`, marginBottom: 10 }} />
-      <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: selected ? "#8AA8C0" : "#7A9AB4", lineHeight: 1.65, marginBottom: 8, fontStyle: "italic" }}>
+      <p className="hidden sm:block" style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: selected ? "#8AA8C0" : "#7A9AB4", lineHeight: 1.65, marginBottom: 8, fontStyle: "italic" }}>
         "{member.description}"
       </p>
-      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: selected ? "#C8952A" : "#5A7A94", letterSpacing: 1, lineHeight: 1.6, marginBottom: member.subcategory === 'minds' ? 8 : 0 }}>
+      <div className="hidden sm:block" style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: selected ? "#C8952A" : "#5A7A94", letterSpacing: 1, lineHeight: 1.6, marginBottom: member.subcategory === 'minds' ? 8 : 0 }}>
         <span style={{ opacity: 0.7 }}>CONVOCAR QUANDO: </span>{member.whenToCall}
       </div>
       {member.subcategory === 'minds' && member.poweredBy && (
@@ -1495,10 +1495,10 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
         {/* HEADER */}
         <div className="px-4 sm:px-8 lg:px-11" style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(8,12,20,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E2D42", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8952A", boxShadow: !["idle", "write_question", "done", "select_category", "select_council"].includes(phase) ? "0 0 14px #C8952A" : "none", animation: !["idle", "write_question", "done", "select_category", "select_council"].includes(phase) ? "glow 2s ease-in-out infinite" : "none" }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#ccd8e0", letterSpacing: 3 }}>KONKLAVE</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#C8952A", letterSpacing: 3 }}>KONKLAVE</span>
             </div>
             <div className="hidden sm:block" style={{ width: 1, height: 18, background: "#1E2D42" }} />
             <span className="hidden sm:block" style={{ fontSize: 8, color: "#C8952A", letterSpacing: 2 }}>{PHASE_LABELS[phase] || ""}</span>
@@ -1648,7 +1648,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                         Mínimo de 3 conselheiros necessário
                       </div>
                     )}
-                    <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 4 }}>
                       {previewMembers.map(m => {
                         const isExiting = exitingMemberIds.has(m.id)
                         const isEntering = enteringMemberIds.has(m.id)
@@ -1735,8 +1735,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               </div>
 
               {/* 3 Tabs — pill container */}
-              <div style={{ marginBottom: 0 }}>
-                <div style={{ display: "inline-flex", background: "#0A0F1A", borderRadius: 4, padding: 4, gap: 2, border: "1px solid #1E2D42" }}>
+              <div style={{ marginBottom: 0, overflowX: "auto" }}>
+                <div style={{ display: "inline-flex", background: "#0A0F1A", borderRadius: 4, padding: 4, gap: 2, border: "1px solid #1E2D42", minWidth: "max-content" }}>
                   {([
                     { key: 'models', label: 'MODELOS DE IA', members: MODELS },
                     { key: 'specialists', label: 'ESPECIALISTAS', members: SPECIALISTS },
@@ -1781,7 +1781,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
               <div style={{ height: 24 }} />
 
-              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 12, paddingBottom: 100 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 12, paddingBottom: 160 }}>
                 {tabMembers.map((m, idx) => (
                   <div key={m.id} style={{ animation: `cardEntrance 350ms ease-out ${idx * 40}ms both` }}>
                     <SelectionCard
@@ -1798,47 +1798,85 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
           {/* SELECTION FOOTER */}
           {phase === "select_council" && (
-            <div className="px-3 sm:px-10 py-3" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#080C14", borderTop: "1px solid rgba(200,149,42,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, zIndex: 30 }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 1, flexShrink: 0 }}>
-                <span style={{ color: "#C8952A", fontWeight: 700 }}>{selectedMembers.size}</span> selecionados de {MEMBERS.length} disponíveis
-                <span style={{ color: "#2A3A4A", marginLeft: 10 }}>· mínimo 3</span>
-              </div>
-              {/* Speed selector */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {([
-                    { key: 'fast', icon: '⚡', label: 'RÁPIDO', desc: '⚡ Só opiniões individuais + veredito direto. Ideal para decisões rápidas. ~2-3 min.' },
-                    { key: 'normal', icon: '◎', label: 'NORMAL', desc: '◎ Fluxo completo com réplica e tréplica. Recomendado para decisões importantes. ~5-8 min.' },
-                    { key: 'deep', icon: '∞', label: 'PROFUNDO', desc: '∞ Todas as fases obrigatórias com respostas mais longas. Máxima profundidade. ~10-15 min.' },
-                  ] as const).map(({ key, icon, label, desc }) => {
-                    const isActive = debateSpeed === key
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setDebateSpeed(key)}
-                        title={desc}
-                        style={{ padding: "7px 12px", background: isActive ? "#C8952A" : "#0B1018", color: isActive ? "#070910" : "#6A8AA8", border: `1px solid ${isActive ? "#C8952A" : "#1E2D42"}`, borderRadius: 999, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" }}
-                      >
-                        {icon} {label}
-                      </button>
-                    )
-                  })}
+            <div className="px-4 sm:px-10 py-3" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#080C14", borderTop: "1px solid rgba(200,149,42,0.25)", zIndex: 30 }}>
+              {/* Mobile layout */}
+              <div className="flex flex-col sm:hidden" style={{ gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", letterSpacing: 1 }}>
+                    <span style={{ color: "#C8952A", fontWeight: 700 }}>{selectedMembers.size}</span> sel. · mín. 3
+                  </div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {([
+                      { key: 'fast', icon: '⚡', label: 'RÁPIDO' },
+                      { key: 'normal', icon: '◎', label: 'NORMAL' },
+                      { key: 'deep', icon: '∞', label: 'PROF.' },
+                    ] as const).map(({ key, icon, label }) => {
+                      const isActive = debateSpeed === key
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setDebateSpeed(key)}
+                          style={{ padding: "5px 8px", background: isActive ? "#C8952A" : "#0B1018", color: isActive ? "#070910" : "#6A8AA8", border: `1px solid ${isActive ? "#C8952A" : "#1E2D42"}`, borderRadius: 999, fontFamily: "'Space Mono', monospace", fontSize: 7, letterSpacing: 1, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" }}
+                        >
+                          {icon} {label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="hidden sm:block" key={debateSpeed} style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", fontStyle: "italic", textAlign: "center", animation: "fadeSlideIn 200ms ease-out both", maxWidth: 360 }}>
-                  {debateSpeed === 'fast' && '⚡ Só opiniões individuais + veredito direto. Ideal para decisões rápidas. ~2-3 min.'}
-                  {debateSpeed === 'normal' && '◎ Fluxo completo com réplica e tréplica. Recomendado para decisões importantes. ~5-8 min.'}
-                  {debateSpeed === 'deep' && '∞ Todas as fases obrigatórias com respostas mais longas. Máxima profundidade. ~10-15 min.'}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setPhase("write_question")} style={{ padding: "12px 16px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer", flexShrink: 0 }}>←</button>
+                  <button
+                    onClick={startDebate}
+                    disabled={selectedMembers.size < 3}
+                    style={{ flex: 1, padding: "12px", background: "#C8952A", color: "#070910", border: "none", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: selectedMembers.size < 3 ? "not-allowed" : "pointer", boxShadow: "0 0 28px rgba(200,149,42,0.2)", opacity: selectedMembers.size < 3 ? 0.4 : 1 }}
+                  >
+                    CONVOCAR O CONSELHO →
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => setPhase("write_question")} style={{ padding: "12px 20px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer" }}>← VOLTAR</button>
-                <button
-                  onClick={startDebate}
-                  disabled={selectedMembers.size < 3}
-                  style={{ padding: "12px 20px", background: "#C8952A", color: "#070910", border: "none", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: selectedMembers.size < 3 ? "not-allowed" : "pointer", boxShadow: "0 0 28px rgba(200,149,42,0.2)", opacity: selectedMembers.size < 3 ? 0.4 : 1 }}
-                >
-                  INICIAR COM {selectedMembers.size} →
-                </button>
+              {/* Desktop layout */}
+              <div className="hidden sm:flex" style={{ alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 1, flexShrink: 0 }}>
+                  <span style={{ color: "#C8952A", fontWeight: 700 }}>{selectedMembers.size}</span> selecionados de {MEMBERS.length} disponíveis
+                  <span style={{ color: "#2A3A4A", marginLeft: 10 }}>· mínimo 3</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {([
+                      { key: 'fast', icon: '⚡', label: 'RÁPIDO', desc: '⚡ Só opiniões individuais + veredito direto. Ideal para decisões rápidas. ~2-3 min.' },
+                      { key: 'normal', icon: '◎', label: 'NORMAL', desc: '◎ Fluxo completo com réplica e tréplica. Recomendado para decisões importantes. ~5-8 min.' },
+                      { key: 'deep', icon: '∞', label: 'PROFUNDO', desc: '∞ Todas as fases obrigatórias com respostas mais longas. Máxima profundidade. ~10-15 min.' },
+                    ] as const).map(({ key, icon, label, desc }) => {
+                      const isActive = debateSpeed === key
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setDebateSpeed(key)}
+                          title={desc}
+                          style={{ padding: "7px 12px", background: isActive ? "#C8952A" : "#0B1018", color: isActive ? "#070910" : "#6A8AA8", border: `1px solid ${isActive ? "#C8952A" : "#1E2D42"}`, borderRadius: 999, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap" }}
+                        >
+                          {icon} {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div key={debateSpeed} style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", fontStyle: "italic", textAlign: "center", animation: "fadeSlideIn 200ms ease-out both", maxWidth: 360 }}>
+                    {debateSpeed === 'fast' && '⚡ Só opiniões individuais + veredito direto. Ideal para decisões rápidas. ~2-3 min.'}
+                    {debateSpeed === 'normal' && '◎ Fluxo completo com réplica e tréplica. Recomendado para decisões importantes. ~5-8 min.'}
+                    {debateSpeed === 'deep' && '∞ Todas as fases obrigatórias com respostas mais longas. Máxima profundidade. ~10-15 min.'}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => setPhase("write_question")} style={{ padding: "12px 20px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer" }}>← VOLTAR</button>
+                  <button
+                    onClick={startDebate}
+                    disabled={selectedMembers.size < 3}
+                    style={{ padding: "12px 20px", background: "#C8952A", color: "#070910", border: "none", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: selectedMembers.size < 3 ? "not-allowed" : "pointer", boxShadow: "0 0 28px rgba(200,149,42,0.2)", opacity: selectedMembers.size < 3 ? 0.4 : 1 }}
+                  >
+                    INICIAR COM {selectedMembers.size} →
+                  </button>
+                </div>
               </div>
             </div>
           )}
