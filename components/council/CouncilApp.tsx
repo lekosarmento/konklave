@@ -186,7 +186,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
         <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 13, color: "#6A8AA8", lineHeight: 1.75, marginBottom: 28 }}>
           Submeta uma questão ao conselho. 15 modelos técnicos + 14 pensadores históricos analisam, debatem e emitem um veredito fundamentado — sem consenso fácil.
         </p>
-        <div className="council-sel-grid" style={{ display: "grid", gap: 24, marginBottom: 32 }}>
+        <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 24, marginBottom: 32 }}>
           <div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#C8952A", letterSpacing: 2, marginBottom: 10 }}>TÉCNICOS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -316,7 +316,7 @@ function HistoryDrawer({ items, onClose, onClear }: {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 90, display: "flex" }}>
       <div onClick={onClose} style={{ flex: 1, background: "rgba(4,6,12,0.7)", backdropFilter: "blur(4px)" }} />
-      <div className="history-panel" style={{ background: "#0A0F1A", borderLeft: "1px solid rgba(200,149,42,0.2)", display: "flex", flexDirection: "column", animation: "slideInRight 300ms cubic-bezier(0.16,1,0.3,1) both" }}>
+      <div className="w-full sm:w-96 overflow-y-auto" style={{ background: "#0A0F1A", borderLeft: "1px solid rgba(200,149,42,0.2)", display: "flex", flexDirection: "column", animation: "slideInRight 300ms cubic-bezier(0.16,1,0.3,1) both" }}>
         {/* Header */}
         <div style={{ padding: "24px 24px 20px", borderBottom: "1px solid #1E2D42", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0 }}>
           <div>
@@ -691,7 +691,7 @@ function DecisionGate({ phase, onYes, onNo }: { phase: string; onYes: () => void
         O conselho concluiu esta fase. Deseja conceder <strong style={{ color: "#C8952A" }}>{label}</strong> aos membros?
       </div>
       <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#6A8AA8", marginBottom: 24, lineHeight: 1.6 }}>{desc}</div>
-      <div className="council-decision-btns">
+      <div className="flex flex-col sm:flex-row gap-3">
         <button onClick={onYes} style={{ padding: "12px 24px", background: "rgba(200,149,42,0.12)", color: "#C8952A", border: "1px solid rgba(200,149,42,0.35)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: "pointer", boxShadow: "0 0 24px rgba(200,149,42,0.15)" }}>
           SIM — CONCEDER {label} →
         </button>
@@ -1488,86 +1488,31 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* ── RESPONSIVE ─────────────────────────────────── */
-        .council-header { padding: 0 44px; }
-        .council-main { padding: 44px 40px 140px; }
-        .council-cat-grid { grid-template-columns: repeat(3, 1fr); }
-        .council-sel-grid { grid-template-columns: 1fr 1fr; }
-        .council-cards-grid { grid-template-columns: 1fr 1fr; }
-        .council-footer { padding: 14px 40px; }
-        .history-panel { width: 400px; }
-        .council-header-stats { display: flex; }
-        .council-header-sep { display: block; }
-        .council-header-phase { display: block; }
-        .council-footer-speed-desc { display: block; }
-        .council-verdict-btns { display: flex; flex-direction: row; gap: 12px; flex-wrap: wrap; }
-        .council-done-actions { display: flex; justify-content: space-between; align-items: center; }
-        .council-decision-btns { display: flex; gap: 12px; }
-        .council-share-btns { display: flex; gap: 10px; }
-        .council-footer-actions { display: flex; gap: 12px; flex-shrink: 0; }
-        .council-name-full { display: inline; }
-        .council-name-short { display: none; }
-        .council-histbtn-full { display: inline; }
-        .council-histbtn-short { display: none; }
-
-        @media (max-width: 767px) {
-          .council-header { padding: 0 14px; }
-          .council-main { padding: 20px 14px 140px; }
-          .council-cat-grid { grid-template-columns: 1fr 1fr; }
-          .council-sel-grid { grid-template-columns: 1fr; }
-          .council-cards-grid { grid-template-columns: 1fr; }
-          .council-footer { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
-          .council-footer-speed-desc { display: none; }
-          .history-panel { width: 100vw; border-left: none; border-top: 1px solid rgba(200,149,42,0.2); }
-          .council-header-stats { display: none; }
-          .council-header-sep { display: none; }
-          .council-header-phase { display: none; }
-          .council-verdict-btns { flex-direction: column; gap: 8px; }
-          .council-done-actions { flex-direction: column; align-items: stretch; gap: 8px; }
-          .council-decision-btns { flex-direction: column; gap: 8px; }
-          .council-share-btns { flex-direction: column; gap: 8px; }
-          .council-footer-actions { flex-direction: column; gap: 8px; width: 100%; }
-          .council-footer-actions button { width: 100%; text-align: center; }
-          .council-name-full { display: none; }
-          .council-name-short { display: inline; }
-          .council-histbtn-full { display: none; }
-          .council-histbtn-short { display: inline; }
-        }
-
-        @media (min-width: 768px) and (max-width: 1024px) {
-          .council-header { padding: 0 24px; }
-          .council-main { padding: 32px 24px 140px; }
-          .council-cat-grid { grid-template-columns: 1fr 1fr 1fr; }
-          .council-sel-grid { grid-template-columns: 1fr 1fr; }
-          .council-cards-grid { grid-template-columns: 1fr 1fr; }
-          .council-footer { padding: 12px 24px; }
-          .history-panel { width: 360px; }
-        }
       `}</style>
 
       <div ref={scrollRef} style={{ height: "100vh", overflowY: "auto", background: "#080C14", fontFamily: "'Space Mono', monospace", color: "#C8D8E8", scrollBehavior: "smooth" }}>
         <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, backgroundImage: "linear-gradient(rgba(200,149,42,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(200,149,42,0.012) 1px,transparent 1px)", backgroundSize: "52px 52px" }} />
 
         {/* HEADER */}
-        <div className="council-header" style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(8,12,20,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E2D42", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="px-4 sm:px-8 lg:px-11" style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(8,12,20,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1E2D42", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8952A", boxShadow: !["idle", "write_question", "done", "select_category", "select_council"].includes(phase) ? "0 0 14px #C8952A" : "none", animation: !["idle", "write_question", "done", "select_category", "select_council"].includes(phase) ? "glow 2s ease-in-out infinite" : "none" }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: "#ccd8e0", letterSpacing: 3 }}>KONKLAVE</span>
             </div>
-            <div className="council-header-sep" style={{ width: 1, height: 18, background: "#1E2D42" }} />
-            <span className="council-header-phase" style={{ fontSize: 8, color: "#C8952A", letterSpacing: 2 }}>{PHASE_LABELS[phase] || ""}</span>
+            <div className="hidden sm:block" style={{ width: 1, height: 18, background: "#1E2D42" }} />
+            <span className="hidden sm:block" style={{ fontSize: 8, color: "#C8952A", letterSpacing: 2 }}>{PHASE_LABELS[phase] || ""}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => guardedNav(() => setShowHistory(true))}
               style={{ background: "transparent", border: "none", color: "#3A5A70", fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer", padding: "4px 8px", minHeight: 44, display: "flex", alignItems: "center" }}
             >
-              <span className="council-histbtn-full">HISTÓRICO {historyItems.length > 0 ? `(${historyItems.length})` : ''}</span>
-              <span className="council-histbtn-short">☰ {historyItems.length > 0 ? historyItems.length : ''}</span>
+              <span className="hidden sm:inline">HISTÓRICO {historyItems.length > 0 ? `(${historyItems.length})` : ''}</span>
+              <span className="sm:hidden">☰ {historyItems.length > 0 ? historyItems.length : ''}</span>
             </button>
             <div
-              className="council-header-stats"
+              className="hidden sm:flex"
               title="Todos os recursos gratuitos por tempo limitado"
               style={{ flexDirection: "column", alignItems: "flex-end", gap: 2, cursor: "default" }}
             >
@@ -1575,8 +1520,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1 }}>{usos} debates{bonusDebates > 0 ? ` · ${bonusDebates} bônus` : ''}</span>
             </div>
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#6A8AA8" }}>
-              <span className="council-name-full">Olá, {user.nome}</span>
-              <span className="council-name-short">Olá, {user.nome.split(' ')[0]}</span>
+              <span className="hidden sm:inline">Olá, {user.nome}</span>
+              <span className="sm:hidden">Olá, {user.nome.split(' ')[0]}</span>
             </span>
           </div>
         </div>
@@ -1596,7 +1541,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
         )}
 
         {/* MAIN */}
-        <div className="council-main" style={{ position: "relative", zIndex: 1, maxWidth: 1020, margin: "0 auto" }}>
+        <div className="px-4 sm:px-8 lg:px-10 pt-6 sm:pt-11 pb-36" style={{ position: "relative", zIndex: 1, maxWidth: 1020, margin: "0 auto" }}>
 
           {/* QUESTION — shown read-only after write_question phase */}
           {!["idle", "write_question"].includes(phase) && (
@@ -1612,7 +1557,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 1, marginBottom: 28 }}>
                 Qual é o contexto da sua questão? O conselho será pré-configurado para você.
               </div>
-              <div className="council-cat-grid" style={{ display: "grid", gap: 12 }}>
+              <div className="grid-cols-2 sm:grid-cols-3" style={{ display: "grid", gap: 12 }}>
                 {CATEGORIES.map((cat, idx) => (
                   <div key={cat.id} style={{ animation: `cardEntrance 400ms ease-out ${idx * 60}ms both` }}>
                     <div
@@ -1663,7 +1608,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                   />
                 </div>
                 {/* Actions */}
-                <div className="council-decision-btns" style={{ justifyContent: "space-between" }}>
+                <div className="flex gap-2" style={{ justifyContent: "space-between" }}>
                   <button
                     onClick={() => { setPhase("idle"); setQuestion("") }}
                     style={{ padding: "12px 20px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer" }}
@@ -1836,7 +1781,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
               <div style={{ height: 24 }} />
 
-              <div className="council-sel-grid" style={{ display: "grid", gap: 12, paddingBottom: 100 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 12, paddingBottom: 100 }}>
                 {tabMembers.map((m, idx) => (
                   <div key={m.id} style={{ animation: `cardEntrance 350ms ease-out ${idx * 40}ms both` }}>
                     <SelectionCard
@@ -1853,7 +1798,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
           {/* SELECTION FOOTER */}
           {phase === "select_council" && (
-            <div className="council-footer" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#080C14", borderTop: "1px solid rgba(200,149,42,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, zIndex: 30 }}>
+            <div className="px-3 sm:px-10 py-3" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#080C14", borderTop: "1px solid rgba(200,149,42,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, zIndex: 30 }}>
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", letterSpacing: 1, flexShrink: 0 }}>
                 <span style={{ color: "#C8952A", fontWeight: 700 }}>{selectedMembers.size}</span> selecionados de {MEMBERS.length} disponíveis
                 <span style={{ color: "#2A3A4A", marginLeft: 10 }}>· mínimo 3</span>
@@ -1879,13 +1824,13 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                     )
                   })}
                 </div>
-                <div className="council-footer-speed-desc" key={debateSpeed} style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", fontStyle: "italic", textAlign: "center", animation: "fadeSlideIn 200ms ease-out both", maxWidth: 360 }}>
+                <div className="hidden sm:block" key={debateSpeed} style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", fontStyle: "italic", textAlign: "center", animation: "fadeSlideIn 200ms ease-out both", maxWidth: 360 }}>
                   {debateSpeed === 'fast' && '⚡ Só opiniões individuais + veredito direto. Ideal para decisões rápidas. ~2-3 min.'}
                   {debateSpeed === 'normal' && '◎ Fluxo completo com réplica e tréplica. Recomendado para decisões importantes. ~5-8 min.'}
                   {debateSpeed === 'deep' && '∞ Todas as fases obrigatórias com respostas mais longas. Máxima profundidade. ~10-15 min.'}
                 </div>
               </div>
-              <div className="council-footer-actions">
+              <div className="flex gap-2 flex-shrink-0">
                 <button onClick={() => setPhase("write_question")} style={{ padding: "12px 20px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: "pointer" }}>← VOLTAR</button>
                 <button
                   onClick={startDebate}
@@ -1912,7 +1857,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           {showOp && (
             <div style={{ marginBottom: 52 }}>
               <SectionHeader label="— FASE 1 · OPINIÕES INDEPENDENTES" active={phase === "opinions"} done={phase !== "opinions"} />
-              <div className="council-cards-grid" style={{ display: "grid", gap: 14 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
                 {activeMembers.map(m => (
                   <MemberCard key={m.id} member={m} status={opStatus[m.id] || "pending"} text={opTexts[m.id] || ""} loading={isLoading && phase === "opinions"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
                 ))}
@@ -1924,7 +1869,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           {showDeb && (
             <div style={{ marginBottom: showAskRep ? 0 : 52 }}>
               <SectionHeader label="— FASE 2 · DEBATE" active={phase === "debate"} done={!["opinions", "debate"].includes(phase)} />
-              <div className="council-cards-grid" style={{ display: "grid", gap: 14 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
                 {activeMembers.map(m => (
                   <MemberCard key={m.id} member={m} status={debStatus[m.id] || "pending"} text={debTexts[m.id] || ""} loading={isLoading && phase === "debate"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
                 ))}
@@ -1938,7 +1883,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           {showRep && (
             <div style={{ marginBottom: showAskTre ? 0 : 52 }}>
               <SectionHeader label="— FASE 3 · RÉPLICA" active={phase === "replica"} done={!["opinions", "debate", "ask_replica", "replica"].includes(phase)} />
-              <div className="council-cards-grid" style={{ display: "grid", gap: 14 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
                 {activeMembers.map(m => (
                   <MemberCard key={m.id} member={m} status={repStatus[m.id] || "pending"} text={repTexts[m.id] || ""} loading={isLoading && phase === "replica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
                 ))}
@@ -1952,7 +1897,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           {showTre && (
             <div style={{ marginBottom: 52 }}>
               <SectionHeader label="— FASE 4 · TRÉPLICA" active={phase === "treplica"} done={["ask_president", "verdict", "done"].includes(phase)} />
-              <div className="council-cards-grid" style={{ display: "grid", gap: 14 }}>
+              <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
                 {activeMembers.map(m => (
                   <MemberCard key={m.id} member={m} status={treStatus[m.id] || "pending"} text={treTexts[m.id] || ""} loading={isLoading && phase === "treplica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
                 ))}
@@ -1966,7 +1911,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               <SectionHeader label="— FASE FINAL · VEREDITO" active={phase === "verdict"} done={phase === "done"} />
               <VerdictPanel text={verdict} loading={verdictLoading} president={electedPresident} />
               {phase === "done" && verdict && !feedbackDone && (
-                <div className="council-verdict-btns" style={{ marginTop: 20 }}>
+                <div className="flex flex-col sm:flex-row gap-3" style={{ marginTop: 20 }}>
                   <button
                     onClick={() => { setVerdictApproved(true); setShowFeedback(true) }}
                     style={{ padding: "9px 18px", background: "transparent", color: "#4CAF7D", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
@@ -2002,7 +1947,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 16, color: "#C0D0DC", lineHeight: 1.5, marginBottom: 20, fontStyle: "italic" }}>
                 Este veredito pode ajudar alguém que você conhece.
               </p>
-              <div className="council-share-btns">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => handleShare('story')}
                   style={{ padding: "10px 18px", background: "transparent", color: "#6A8AA8", border: "1px solid #1E2D42", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
@@ -2025,7 +1970,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
           {/* DONE ACTIONS */}
           {phase === "done" && (
-            <div className="council-done-actions" style={{ marginTop: 24 }}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3" style={{ marginTop: 24 }}>
               <span style={{ fontSize: 8, color: "#6A8AA8", letterSpacing: 1 }}>#{sessionId} · {fmt(elapsed)}</span>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
