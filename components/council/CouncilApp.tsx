@@ -440,22 +440,22 @@ function FeedbackModal({ onClose, verdict, userEmail, question, memberIds, verdi
     if (!stars) return
     setSubmitting(true)
     try {
+      const feedbackPayload = {
+        email: userEmail || null,
+        rating: stars,
+        comentario: comentario.trim() || null,
+        questao: question,
+        verdict_approved: verdictApproved,
+      }
+      console.log('[feedback] sending:', JSON.stringify(feedbackPayload))
       const feedbackRes = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail || null,
-          rating: stars,
-          comentario: comentario.trim() || null,
-          shared_verdict: shareVerdict ? verdict : null,
-          questao: question,
-          membros_usados: memberIds,
-          verdict_approved: verdictApproved,
-        }),
+        body: JSON.stringify(feedbackPayload),
       })
       if (!feedbackRes.ok) {
         const errJson = await feedbackRes.json().catch(() => ({}))
-        console.error('Feedback error:', errJson)
+        console.error('Feedback error - status:', feedbackRes.status, 'body:', JSON.stringify(errJson))
       }
 
       // Update rating on the most recent matching history item

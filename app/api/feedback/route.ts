@@ -1,57 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// POST /api/feedback — insert a feedback row using service role key (bypasses RLS)
-export async function POST(req: NextRequest) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[api/feedback] SUPABASE_SERVICE_ROLE_KEY not configured')
-    return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 })
-  }
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-  console.log('[api/feedback] POST received')
-  let body: unknown
+export async function POST(req: Request) {
   try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
-  const { email, rating, comentario, shared_verdict, questao, membros_usados, verdict_approved } =
-    body as {
-      email?: string
-      rating?: number
-      comentario?: string
-      shared_verdict?: string
-      questao?: string
-      membros_usados?: string[]
-      verdict_approved?: boolean | null
+    const body = await req.json()
+    console.log('[feedback] received:', JSON.stringify(body))
+
+    const { email, rating, comentario, questao, verdict_approved } = body
+
+    if (!email || !rating) {
+      return NextResponse.json(
+        { error: 'Missing required fields: email and rating' },
+        { status: 400 }
+      )
     }
-  console.log('[api/feedback] data:', { email, rating, questao, verdict_approved })
 
-  if (!rating) {
-    return NextResponse.json({ error: 'rating is required' }, { status: 400 })
+    const insertData = {
+      email,
+      rating: Number(rating),
+      comentario: comentario || null,
+      questao: questao || null,
+      verdict_approved: verdict_approved ?? null,
+      criado_em: new Date().toISOString(),
+    }
+
+    console.log('[feedback] inserting:', JSON.stringify(insertData))
+
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .insert([insertData])
+      .select()
+
+    if (error) {
+      console.error('[feedback] Supabase error:', JSON.stringify(error))
+      return NextResponse.json(
+        { error: error.message, details: error.details, hint: error.hint },
+        { status: 500 }
+      )
+    }
+
+    console.log('[feedback] success:', JSON.stringify(data))
+    return NextResponse.json({ success: true, data })
+
+  } catch (e) {
+    console.error('[feedback] unexpected error:', e)
+    return NextResponse.json(
+      { error: String(e) },
+      { status: 500 }
+    )
   }
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  console.log('[api/feedback] before insert')
-  const { data, error } = await supabase.from('feedbacks').insert({
-    email: email || null,
-    rating,
-    comentario: comentario || null,
-    shared_verdict: shared_verdict || null,
-    questao: questao || null,
-    membros_usados: membros_usados || null,
-    verdict_approved: verdict_approved ?? null,
-    criado_em: new Date().toISOString(),
-  }).select().single()
-  console.log('[api/feedback] after insert — data:', data, 'error:', error)
-
-  if (error) {
-    console.error('[api/feedback] Supabase insert error:', error)
-    return NextResponse.json({ error: error.message, details: error }, { status: 500 })
-  }
-
-  return NextResponse.json({ ok: true, data })
 }
