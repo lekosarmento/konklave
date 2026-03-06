@@ -545,26 +545,36 @@ function MemberCard({ member, status, text, compact = false, loading = false, lo
   const isActive = status === "active"
   const isDone = status === "done"
   const isPending = status === "pending"
+  const isThinking = (isPending && loading) || isActive
   const glow = member.color + "12"
 
   return (
-    <div style={{
-      background: isPending ? "#0B1018" : "#111827",
-      border: `1px solid ${isDone ? member.color + "99" : isPending ? "#1E2D42" : isActive ? member.color + "99" : "#1E2D42"}`,
-      borderTop: `2px solid ${isDone ? member.color : isPending ? "#1E2D42" : isActive ? member.color : member.color + "44"}`,
-      borderRadius: 2,
-      padding: compact ? "14px 16px" : "20px",
-      opacity: isPending && !loading ? 0.25 : 1,
-      boxShadow: isActive ? "0 2px 24px rgba(0,0,0,0.4)" : "none",
-      transition: "all 0.4s ease",
-      position: "relative", overflow: "hidden",
-    }}>
-      {(isActive || isDone) && (
+    <motion.div
+      style={{
+        background: isPending && !loading ? "#0B1018" : "#111827",
+        border: `1px solid ${isDone ? member.color + "99" : isThinking ? member.color + "30" : "#1E2D42"}`,
+        borderTop: `2px solid ${isDone ? member.color : isThinking ? member.color : member.color + "44"}`,
+        borderRadius: 2,
+        padding: compact ? "14px 16px" : "20px",
+        opacity: isPending && !loading ? 0.25 : 1,
+        position: "relative", overflow: "hidden",
+        transition: "opacity 0.4s ease",
+      }}
+      animate={isThinking ? {
+        boxShadow: [
+          `0 0 0px ${member.color}00`,
+          `0 4px 24px ${member.color}18`,
+          `0 0 0px ${member.color}00`,
+        ],
+      } : isDone ? { boxShadow: "0 2px 12px rgba(0,0,0,0.3)" } : { boxShadow: "none" }}
+      transition={{ duration: 2, repeat: isThinking ? Infinity : 0, ease: 'easeInOut' }}
+    >
+      {(isThinking || isDone) && (
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: `radial-gradient(ellipse at top left, ${glow}, transparent 65%)` }} />
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {isActive ? (
+          {isThinking ? (
             <motion.div
               style={{
                 width: compact ? 28 : 34, height: compact ? 28 : 34, borderRadius: 2,
@@ -578,55 +588,101 @@ function MemberCard({ member, status, text, compact = false, loading = false, lo
               animate={{
                 boxShadow: [
                   `0 0 0px ${member.color}00`,
-                  `0 0 16px ${member.color}80`,
+                  `0 0 12px ${member.color}60`,
                   `0 0 0px ${member.color}00`,
                 ],
                 opacity: [0.7, 1, 0.7],
               }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >{member.symbol}</motion.div>
           ) : (
             <div style={{
               width: compact ? 28 : 34, height: compact ? 28 : 34, borderRadius: 2,
-              background: isDone || isActive ? member.color + "20" : "#0F1520",
-              border: `1px solid ${isDone || isActive ? member.color + "99" : "#1E2D42"}`,
+              background: isDone ? member.color + "20" : "#0F1520",
+              border: `1px solid ${isDone ? member.color + "99" : "#1E2D42"}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontFamily: "'Libre Baskerville', Georgia, serif",
               fontSize: 16, fontWeight: 400,
-              color: isActive || isDone ? member.color : "#2A3A4A",
+              color: isDone ? member.color : "#2A3A4A",
             }}>{member.symbol}</div>
           )}
           <div>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: compact ? 10 : 12, fontWeight: 700, color: isActive || isDone ? member.color : loading ? "#3A5060" : "#2A3A4A", letterSpacing: 2 }}>{member.name}</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: compact ? 10 : 12, fontWeight: 700, color: isThinking || isDone ? member.color : "#2A3A4A", letterSpacing: 2 }}>{member.name}</div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1, marginTop: 1 }}>{member.role}</div>
           </div>
         </div>
-        {isActive && (
+        {isThinking && (
           <div style={{ display: "flex", gap: 3 }}>
             {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: member.color, display: "inline-block", animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: member.color, display: "inline-block", animation: `pulse ${isActive ? '1.2s' : '1.6s'} ease-in-out ${i * (isActive ? 0.2 : 0.35)}s infinite` }} />
             ))}
           </div>
         )}
         {isDone && <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1 }}>✓</span>}
-        {isPending && loading && (
-          <div style={{ display: "flex", gap: 3 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "#2A4A5A", display: "inline-block", animation: `pulse 1.6s ease-in-out ${i * 0.35}s infinite` }} />
-            ))}
-          </div>
-        )}
       </div>
-      <div style={{ height: 1, background: `linear-gradient(90deg, ${isActive || isDone ? member.color + "44" : "#1E2D42"}, transparent)`, marginBottom: 12 }} />
-      <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: compact ? 12 : 13, lineHeight: 1.9, color: isDone ? "#B8CCE0" : isActive ? "#C8D8E8" : "#2A3A4A", minHeight: compact ? 40 : 80, whiteSpace: "pre-wrap" }}>
-        {(isActive || isDone) && text}
-        {isActive && <span style={{ animation: "blink .6s step-end infinite", color: member.color }}>█</span>}
-        {isPending && loading && loadingMessage && (
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#3A5870", fontStyle: "italic" }}>{loadingMessage}</span>
-        )}
-        {isPending && !loading && <span style={{ color: "#2A3A4A", fontFamily: "'Space Mono', monospace", fontSize: 10 }}>AGUARDANDO...</span>}
+      <div style={{ height: 1, background: `linear-gradient(90deg, ${isThinking || isDone ? member.color + "44" : "#1E2D42"}, transparent)`, marginBottom: 12 }} />
+      <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: compact ? 12 : 13, lineHeight: 1.9, minHeight: compact ? 40 : 80 }}>
+        <AnimatePresence mode="wait">
+          {isPending && loading ? (
+            <motion.div
+              key="loading"
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <motion.span
+                    style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: member.color, opacity: 0.7 }}
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    analisando...
+                  </motion.span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[100, 85, 92, 70].map((width, i) => (
+                    <motion.div
+                      key={i}
+                      style={{
+                        width: `${width}%`,
+                        height: 8,
+                        borderRadius: 2,
+                        backgroundColor: member.color,
+                        opacity: 0.08,
+                      }}
+                      animate={{ opacity: [0.05, 0.12, 0.05] }}
+                      transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : isActive ? (
+            <motion.div
+              key="active"
+              style={{ color: "#C8D8E8", whiteSpace: "pre-wrap" }}
+            >
+              {text}
+              <span style={{ animation: "blink .6s step-end infinite", color: member.color }}>█</span>
+            </motion.div>
+          ) : isDone ? (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              style={{ color: "#B8CCE0", whiteSpace: "pre-wrap" }}
+            >
+              {text}
+            </motion.div>
+          ) : (
+            <motion.div key="waiting">
+              <span style={{ color: "#2A3A4A", fontFamily: "'Space Mono', monospace", fontSize: 10 }}>AGUARDANDO...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
