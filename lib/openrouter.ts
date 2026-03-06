@@ -4,8 +4,8 @@ export interface ORMessage {
 }
 
 const FALLBACK_MODELS = [
+    'anthropic/claude-sonnet-4-5',
     'google/gemini-2.0-flash-001',
-    'anthropic/claude-haiku-4-5-20251001',
     'openai/gpt-4o-mini',
     'meta-llama/llama-3.1-8b-instruct:free',
 ]

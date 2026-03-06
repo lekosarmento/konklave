@@ -5,7 +5,7 @@ export const MEMBERS: Member[] = [
   {
     id: 'claude',
     name: 'CLAUDE',
-    model: 'anthropic/claude-haiku-4-5-20251001',
+    model: 'anthropic/claude-sonnet-4-5',
     role: 'O Filósofo',
     color: '#C8952A',
     symbol: 'Φ',
