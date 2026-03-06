@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import type { Dispatch, SetStateAction } from "react"
+import { motion, AnimatePresence } from 'framer-motion'
+import PhaseProgressBar from '@/components/PhaseProgressBar'
 
 // ─── TYPES ────────────────────────────────────────────────────
 interface Member {
@@ -561,15 +563,38 @@ function MemberCard({ member, status, text, compact = false, loading = false, lo
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: compact ? 28 : 34, height: compact ? 28 : 34, borderRadius: 2,
-            background: isDone || isActive ? member.color + "20" : "#0F1520",
-            border: `1px solid ${isDone || isActive ? member.color + "99" : "#1E2D42"}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "'Libre Baskerville', Georgia, serif",
-            fontSize: 16, fontWeight: 400,
-            color: isActive || isDone ? member.color : "#2A3A4A",
-          }}>{member.symbol}</div>
+          {isActive ? (
+            <motion.div
+              style={{
+                width: compact ? 28 : 34, height: compact ? 28 : 34, borderRadius: 2,
+                background: member.color + "20",
+                border: `1px solid ${member.color}99`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "'Libre Baskerville', Georgia, serif",
+                fontSize: 16, fontWeight: 400,
+                color: member.color,
+              }}
+              animate={{
+                boxShadow: [
+                  `0 0 0px ${member.color}00`,
+                  `0 0 16px ${member.color}80`,
+                  `0 0 0px ${member.color}00`,
+                ],
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            >{member.symbol}</motion.div>
+          ) : (
+            <div style={{
+              width: compact ? 28 : 34, height: compact ? 28 : 34, borderRadius: 2,
+              background: isDone || isActive ? member.color + "20" : "#0F1520",
+              border: `1px solid ${isDone || isActive ? member.color + "99" : "#1E2D42"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "'Libre Baskerville', Georgia, serif",
+              fontSize: 16, fontWeight: 400,
+              color: isActive || isDone ? member.color : "#2A3A4A",
+            }}>{member.symbol}</div>
+          )}
           <div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: compact ? 10 : 12, fontWeight: 700, color: isActive || isDone ? member.color : loading ? "#3A5060" : "#2A3A4A", letterSpacing: 2 }}>{member.name}</div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1, marginTop: 1 }}>{member.role}</div>
@@ -757,10 +782,15 @@ function VerdictPanel({ text, loading, president }: { text: string; loading: boo
 // ─── SECTION HEADER ───────────────────────────────────────────
 function SectionHeader({ label, active, done }: { label: string; active: boolean; done: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, opacity: active || done ? 1 : 0.15, transition: "opacity 0.4s" }}>
+    <motion.div
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: active || done ? 1 : 0.15, x: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}
+    >
       <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, color: active ? "#C8952A" : done ? "#6A8AA8" : "#111", letterSpacing: 3, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${active ? "rgba(200,149,42,0.25)" : "#1E2D42"}, transparent)` }} />
-    </div>
+    </motion.div>
   )
 }
 
@@ -1895,9 +1925,17 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
           {showOp && (
             <div style={{ marginBottom: 52 }}>
               <SectionHeader label="— FASE 1 · OPINIÕES INDEPENDENTES" active={phase === "opinions"} done={phase !== "opinions"} />
+              {isDebateActive && <PhaseProgressBar currentPhase={phase} />}
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map(m => (
-                  <MemberCard key={m.id} member={m} status={opStatus[m.id] || "pending"} text={opTexts[m.id] || ""} loading={isLoading && phase === "opinions"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                {activeMembers.map((m, idx) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
+                  >
+                    <MemberCard member={m} status={opStatus[m.id] || "pending"} text={opTexts[m.id] || ""} loading={isLoading && phase === "opinions"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -1908,8 +1946,15 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: showAskRep ? 0 : 52 }}>
               <SectionHeader label="— FASE 2 · DEBATE" active={phase === "debate"} done={!["opinions", "debate"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map(m => (
-                  <MemberCard key={m.id} member={m} status={debStatus[m.id] || "pending"} text={debTexts[m.id] || ""} loading={isLoading && phase === "debate"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                {activeMembers.map((m, idx) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
+                  >
+                    <MemberCard member={m} status={debStatus[m.id] || "pending"} text={debTexts[m.id] || ""} loading={isLoading && phase === "debate"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -1922,8 +1967,15 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: showAskTre ? 0 : 52 }}>
               <SectionHeader label="— FASE 3 · RÉPLICA" active={phase === "replica"} done={!["opinions", "debate", "ask_replica", "replica"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map(m => (
-                  <MemberCard key={m.id} member={m} status={repStatus[m.id] || "pending"} text={repTexts[m.id] || ""} loading={isLoading && phase === "replica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                {activeMembers.map((m, idx) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
+                  >
+                    <MemberCard member={m} status={repStatus[m.id] || "pending"} text={repTexts[m.id] || ""} loading={isLoading && phase === "replica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -1936,40 +1988,76 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: 52 }}>
               <SectionHeader label="— FASE 4 · TRÉPLICA" active={phase === "treplica"} done={["ask_president", "verdict", "done"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map(m => (
-                  <MemberCard key={m.id} member={m} status={treStatus[m.id] || "pending"} text={treTexts[m.id] || ""} loading={isLoading && phase === "treplica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                {activeMembers.map((m, idx) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
+                  >
+                    <MemberCard member={m} status={treStatus[m.id] || "pending"} text={treTexts[m.id] || ""} loading={isLoading && phase === "treplica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                  </motion.div>
                 ))}
               </div>
             </div>
           )}
 
           {/* VERDICT */}
-          {showVerdict && (
-            <div style={{ marginBottom: 32 }}>
-              <SectionHeader label="— FASE FINAL · VEREDITO" active={phase === "verdict"} done={phase === "done"} />
-              <VerdictPanel text={verdict} loading={verdictLoading} president={electedPresident} />
-              {phase === "done" && verdict && !feedbackDone && (
-                <div className="flex flex-col sm:flex-row gap-3" style={{ marginTop: 20 }}>
-                  <button
-                    onClick={() => { setVerdictApproved(true); setShowFeedback(true) }}
-                    style={{ padding: "9px 18px", background: "transparent", color: "#4CAF7D", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4CAF7D'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(76,175,125,0.08)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(76,175,125,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+          <AnimatePresence>
+            {showVerdict && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                style={{ marginBottom: 32 }}
+              >
+                {/* Golden flash when verdict phase starts */}
+                {phase === "verdict" && (
+                  <motion.div
+                    className="fixed inset-0 pointer-events-none z-20"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.08, 0] }}
+                    transition={{ duration: 1.5, times: [0, 0.3, 1] }}
+                    style={{ background: 'radial-gradient(ellipse at center, #C8952A 0%, transparent 70%)' }}
+                  />
+                )}
+                <SectionHeader label="— FASE FINAL · VEREDITO" active={phase === "verdict"} done={phase === "done"} />
+                <motion.div
+                  initial={{ opacity: 0, y: 32 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <VerdictPanel text={verdict} loading={verdictLoading} president={electedPresident} />
+                </motion.div>
+                {phase === "done" && verdict && !feedbackDone && (
+                  <motion.div
+                    className="flex flex-col sm:flex-row gap-3"
+                    style={{ marginTop: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
                   >
-                    ✓ VEREDITO APROVADO
-                  </button>
-                  <button
-                    onClick={() => { setVerdictApproved(false); setShowFeedback(true) }}
-                    style={{ padding: "9px 18px", background: "transparent", color: "#E07070", border: "1px solid rgba(224,112,112,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E07070'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(224,112,112,0.08)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(224,112,112,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-                  >
-                    ✗ VEREDITO REPROVADO
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                    <button
+                      onClick={() => { setVerdictApproved(true); setShowFeedback(true) }}
+                      style={{ padding: "9px 18px", background: "transparent", color: "#4CAF7D", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4CAF7D'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(76,175,125,0.08)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(76,175,125,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    >
+                      ✓ VEREDITO APROVADO
+                    </button>
+                    <button
+                      onClick={() => { setVerdictApproved(false); setShowFeedback(true) }}
+                      style={{ padding: "9px 18px", background: "transparent", color: "#E07070", border: "1px solid rgba(224,112,112,0.5)", borderRadius: 2, fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 2, cursor: "pointer", transition: "all 0.2s" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E07070'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(224,112,112,0.08)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(224,112,112,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    >
+                      ✗ VEREDITO REPROVADO
+                    </button>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* MOST DIVERGENT BADGE */}
           {mostDivergentText && phase === "done" && (
