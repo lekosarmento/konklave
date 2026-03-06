@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { motion, AnimatePresence } from 'framer-motion'
 import PhaseProgressBar from '@/components/PhaseProgressBar'
+import { supabase } from '@/lib/supabase'
 
 // ─── TYPES ────────────────────────────────────────────────────
 interface Member {
@@ -894,6 +895,13 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const [sharesCount, setSharesCount] = useState(0)
   const [shareToast, setShareToast] = useState(false)
 
+  // User menu / profile
+  const [userName, setUserName] = useState(user.nome)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [showEditProfile, setShowEditProfile] = useState(false)
+  const [editName, setEditName] = useState(user.nome)
+  const [profileToast, setProfileToast] = useState(false)
+
   // Council preview animation state
   const [enteringMemberIds, setEnteringMemberIds] = useState<Set<string>>(new Set())
   const [exitingMemberIds, setExitingMemberIds] = useState<Set<string>>(new Set())
@@ -1199,6 +1207,42 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
 
   const handleStopDebate = () => {
     setShowStopModal(true)
+  }
+
+  // Click-outside for user menu
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuOpen && !(e.target as Element).closest('[data-user-menu]')) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
+
+  const handleLogout = () => {
+    localStorage.removeItem('konklave_user')
+    localStorage.removeItem('konklave_history')
+    setUserMenuOpen(false)
+    window.location.href = '/'
+  }
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) return
+    const { error } = await supabase
+      .from('leads')
+      .update({ nome: editName.trim() })
+      .eq('email', user.email)
+    if (!error) {
+      setUserName(editName.trim())
+      // Update localStorage
+      const stored = JSON.parse(localStorage.getItem('konklave_user') || '{}')
+      stored.nome = editName.trim()
+      localStorage.setItem('konklave_user', JSON.stringify(stored))
+      setShowEditProfile(false)
+      setProfileToast(true)
+      setTimeout(() => setProfileToast(false), 3000)
+    }
   }
 
   const handleConfirmStop = () => {
@@ -1543,25 +1587,94 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <span className="hidden sm:block" style={{ fontSize: 8, color: "#C8952A", letterSpacing: 2 }}>{PHASE_LABELS[phase] || ""}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              onClick={() => guardedNav(() => setShowHistory(true))}
-              style={{ background: "transparent", border: "none", color: "#3A5A70", fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, cursor: "pointer", padding: "4px 8px", minHeight: 44, display: "flex", alignItems: "center" }}
-            >
-              <span className="hidden sm:inline">HISTÓRICO {historyItems.length > 0 ? `(${historyItems.length})` : ''}</span>
-              <span className="sm:hidden">☰ {historyItems.length > 0 ? historyItems.length : ''}</span>
-            </button>
-            <div
-              className="hidden sm:flex"
-              title="Todos os recursos gratuitos por tempo limitado"
-              style={{ flexDirection: "column", alignItems: "flex-end", gap: 2, cursor: "default" }}
-            >
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#C8952A", letterSpacing: 2, fontWeight: 700 }}>ACESSO GRATUITO</span>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "#6A8AA8", letterSpacing: 1 }}>{usos} debates{bonusDebates > 0 ? ` · ${bonusDebates} bônus` : ''}</span>
+            {/* User dropdown */}
+            <div data-user-menu style={{ position: "relative" }}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "transparent", border: "1px solid #1E2D42", cursor: "pointer", transition: "border-color 0.2s", fontFamily: "'Space Mono', monospace" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#C8952A" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E2D42" }}
+              >
+                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#C8952A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, color: "#080C14" }}>
+                    {userName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C0D0DC" }}>{userName.split(' ')[0]}</span>
+                <span style={{ fontSize: 10, color: "#6A8AA8" }}>▾</span>
+              </button>
+
+              {userMenuOpen && (
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", width: "min(256px, calc(100vw - 16px))", background: "#0A0F1A", border: "1px solid #1E2D42", zIndex: 50, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                  {/* User info header */}
+                  <div style={{ padding: "16px", borderBottom: "1px solid #1E2D42" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#C8952A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 16, fontWeight: 700, color: "#080C14" }}>
+                          {userName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 700, color: "#C0D0DC", margin: 0 }}>{userName}</p>
+                        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid #1E2D42" }}>
+                    <div style={{ padding: "12px 8px", textAlign: "center" }}>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 18, fontWeight: 700, color: "#C8952A", margin: 0 }}>{usos}</p>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", margin: "2px 0 0", lineHeight: 1.2 }}>debates</p>
+                    </div>
+                    <div style={{ padding: "12px 8px", textAlign: "center", borderLeft: "1px solid #1E2D42", borderRight: "1px solid #1E2D42" }}>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 18, fontWeight: 700, color: "#C8952A", margin: 0 }}>{bonusDebates}</p>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", margin: "2px 0 0", lineHeight: 1.2 }}>bônus</p>
+                    </div>
+                    <div style={{ padding: "12px 8px", textAlign: "center" }}>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 18, fontWeight: 700, color: "#C8952A", margin: 0 }}>{historyItems.length}</p>
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", margin: "2px 0 0", lineHeight: 1.2 }}>histórico</p>
+                    </div>
+                  </div>
+
+                  {/* Plan badge */}
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid #1E2D42", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8" }}>Plano atual</span>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: "#C8952A", border: "1px solid #C8952A", padding: "2px 8px" }}>
+                      ACESSO GRATUITO
+                    </span>
+                  </div>
+
+                  {/* Menu items */}
+                  <div style={{ padding: "4px 0" }}>
+                    <button
+                      onClick={() => { guardedNav(() => setShowHistory(true)); setUserMenuOpen(false) }}
+                      style={{ width: "100%", padding: "10px 16px", textAlign: "left", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C0D0DC", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s" }}
+                      onMouseEnter={e => { const t = e.currentTarget; t.style.background = "#1E2D42"; t.style.color = "#C8952A" }}
+                      onMouseLeave={e => { const t = e.currentTarget; t.style.background = "transparent"; t.style.color = "#C0D0DC" }}
+                    >
+                      <span>◈</span> HISTÓRICO DE DEBATES
+                    </button>
+                    <button
+                      onClick={() => { setEditName(userName); setShowEditProfile(true); setUserMenuOpen(false) }}
+                      style={{ width: "100%", padding: "10px 16px", textAlign: "left", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C0D0DC", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s" }}
+                      onMouseEnter={e => { const t = e.currentTarget; t.style.background = "#1E2D42"; t.style.color = "#C8952A" }}
+                      onMouseLeave={e => { const t = e.currentTarget; t.style.background = "transparent"; t.style.color = "#C0D0DC" }}
+                    >
+                      <span>✎</span> EDITAR PERFIL
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      style={{ width: "100%", padding: "10px 16px", textAlign: "left", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#6A8AA8", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s" }}
+                      onMouseEnter={e => { const t = e.currentTarget; t.style.background = "#1E2D42"; t.style.color = "#E05A5A" }}
+                      onMouseLeave={e => { const t = e.currentTarget; t.style.background = "transparent"; t.style.color = "#6A8AA8" }}
+                    >
+                      <span>→</span> SAIR
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "#6A8AA8" }}>
-              <span className="hidden sm:inline">Olá, {user.nome}</span>
-              <span className="sm:hidden">Olá, {user.nome.split(' ')[0]}</span>
-            </span>
           </div>
         </div>
 
@@ -2272,6 +2385,69 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       {feedbackToast && (
         <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: "#0A0F1A", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 999, padding: "10px 24px", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#4CAF7D", zIndex: 60, letterSpacing: 2, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
           Obrigado pelo feedback!
+        </div>
+      )}
+
+      {/* PROFILE TOAST */}
+      {profileToast && (
+        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: "#0A0F1A", border: "1px solid rgba(76,175,125,0.5)", borderRadius: 999, padding: "10px 24px", fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#4CAF7D", zIndex: 60, letterSpacing: 2, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
+          Perfil atualizado!
+        </div>
+      )}
+
+      {/* EDIT PROFILE MODAL */}
+      {showEditProfile && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
+          <div style={{ background: "#0A0F1A", border: "1px solid #1E2D42", width: "100%", maxWidth: 384, animation: "modalEntrance 250ms cubic-bezier(0.16,1,0.3,1) both" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #1E2D42" }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "#C8952A", letterSpacing: 4 }}>EDITAR PERFIL</span>
+              <button onClick={() => setShowEditProfile(false)} style={{ background: "transparent", border: "none", color: "#6A8AA8", cursor: "pointer", fontSize: 14, padding: 4 }}>✕</button>
+            </div>
+            {/* Form */}
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", letterSpacing: 3, display: "block", marginBottom: 6 }}>NOME</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  style={{ width: "100%", background: "#080C14", border: "1px solid #1E2D42", padding: "10px 12px", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#C0D0DC", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
+                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = "#C8952A" }}
+                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = "#1E2D42" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", letterSpacing: 3, display: "block", marginBottom: 6 }}>EMAIL</label>
+                <input
+                  type="email"
+                  value={user.email}
+                  disabled
+                  style={{ width: "100%", background: "#080C14", border: "1px solid #1E2D42", padding: "10px 12px", fontFamily: "'Space Mono', monospace", fontSize: 12, color: "#6A8AA8", outline: "none", boxSizing: "border-box", cursor: "not-allowed" }}
+                />
+                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "#6A8AA8", marginTop: 4, marginBottom: 0 }}>Email não pode ser alterado</p>
+              </div>
+            </div>
+            {/* Actions */}
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #1E2D42", display: "flex", gap: 12 }}>
+              <button
+                onClick={handleSaveProfile}
+                style={{ flex: 1, background: "#C8952A", color: "#080C14", border: "none", fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, padding: "12px", cursor: "pointer", transition: "background 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#D4A534" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#C8952A" }}
+              >
+                SALVAR →
+              </button>
+              <button
+                onClick={() => setShowEditProfile(false)}
+                style={{ padding: "12px 16px", background: "transparent", border: "1px solid #1E2D42", color: "#6A8AA8", fontFamily: "'Space Mono', monospace", fontSize: 10, cursor: "pointer", transition: "border-color 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#6A8AA8" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1E2D42" }}
+              >
+                CANCELAR
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
