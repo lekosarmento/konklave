@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         if (!member) return NextResponse.json({ error: 'unknown member' }, { status: 400 })
         if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 })
 
-        const wordLimit = speed === 'deep' ? 320 : 200
-        const PHASE_TASK = `TAREFA — FASE 2, DEBATE: Analise as opiniões dos outros membros, questione pontos fracos e aprofunde os mais relevantes. Máx ${wordLimit} palavras.`
+        const wordLimit = speed === 'deep' ? 160 : 100
+        const PHASE_TASK = `TAREFA — FASE 2, DEBATE: Analise as opiniões dos outros membros, questione pontos fracos e aprofunde os mais relevantes. Seja conciso. Máximo 3 parágrafos curtos. Máx ${wordLimit} palavras.`
 
         const myOpinion = allOpinions[member.id] || ''
         const otherOpinionsStr = MEMBERS
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
             .map(m => `${m.name} (${m.role}):\n${allOpinions[m.id]}`)
             .join('\n\n---\n\n')
 
-        const userPrompt = `Questão em debate: ${question}\n\nSua opinião anterior:\n${myOpinion}\n\nO que os outros membros disseram:\n\n---\n\n${otherOpinionsStr}`
+        const userPrompt = `Questão em debate: ${question}\n\nSua opinião anterior:\n${myOpinion}\n\nO que os outros membros disseram:\n\n---\n\n${otherOpinionsStr}\n\nResponda em no máximo ${wordLimit} palavras.`
 
         const text = await callOpenRouterWithRetry(member.model, [
             { role: 'system', content: member.systemPrompt + '\n\n' + PHASE_TASK },

@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
         if (!member) return NextResponse.json({ error: 'unknown member' }, { status: 400 })
         if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 })
 
-        const wordLimit = speed === 'deep' ? 280 : 180
-        const PHASE_TASK = `TAREFA — FASE 4, TRÉPLICA: Apresente suas considerações finais sintetizando o que o debate produziu. Máx ${wordLimit} palavras.`
+        const wordLimit = speed === 'deep' ? 140 : 90
+        const PHASE_TASK = `TAREFA — FASE 4, TRÉPLICA: Apresente suas considerações finais sintetizando o que o debate produziu. Seja conciso. Máximo 2 parágrafos curtos. Máx ${wordLimit} palavras.`
 
         let transcript = `Questão em debate: ${question}\n\n`
         transcript += `=== FASE 1: OPINIÕES ===\n`
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
             transcript += `${m.name} (${m.role}):\n${allReplicas[m.id]}\n\n`
         })
 
-        const userPrompt = `${transcript}\n\n---\n\nConsidere todo o histórico acima para sua tréplica final.`
+        const userPrompt = `${transcript}\n\n---\n\nConsidere todo o histórico acima para sua tréplica final. Responda em no máximo ${wordLimit} palavras.`
 
         const text = await callOpenRouterWithRetry(member.model, [
             { role: 'system', content: member.systemPrompt + '\n\n' + PHASE_TASK },

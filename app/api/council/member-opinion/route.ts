@@ -15,12 +15,12 @@ export async function POST(req: NextRequest) {
         if (!member) return NextResponse.json({ error: 'unknown member' }, { status: 400 })
         if (!question) return NextResponse.json({ error: 'question required' }, { status: 400 })
 
-        const wordLimit = speed === 'deep' ? 400 : 250
-        const PHASE_TASK = `TAREFA — FASE 1, OPINIÕES: Apresente sua visão inicial sobre a questão. Seja direto e autêntico à sua identidade. Máx ${wordLimit} palavras.`
+        const wordLimit = speed === 'deep' ? 200 : 120
+        const PHASE_TASK = `TAREFA — FASE 1, OPINIÕES: Apresente sua visão inicial sobre a questão. Seja direto e autêntico à sua identidade. Seja conciso. Máximo 3 parágrafos curtos. Máx ${wordLimit} palavras.`
 
         const userPrompt = member.id === 'perplexity'
-            ? `Pesquise dados reais, tendências de mercado e referências concretas sobre:\n\n${question}`
-            : `Analise esta questão:\n\n${question}`
+            ? `Pesquise dados reais, tendências de mercado e referências concretas sobre:\n\n${question}\n\nResponda em no máximo ${wordLimit} palavras.`
+            : `Analise esta questão:\n\n${question}\n\nResponda em no máximo ${wordLimit} palavras.`
 
         const text = await callOpenRouterWithRetry(member.model, [
             { role: 'system', content: member.systemPrompt + '\n\n' + PHASE_TASK },

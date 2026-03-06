@@ -88,45 +88,37 @@ export default function CadastroPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         input::placeholder { color: #2A3A4A; }
         input:focus { border-color: rgba(200,149,42,0.5) !important; }
-        .cad-header { padding: 0 44px; }
-        .cad-form-wrap { padding: 40px; }
-        @media (max-width: 767px) {
-          .cad-header { padding: 0 20px; }
-          .cad-form-wrap { padding: 24px 20px; }
-          .cad-card { padding: 24px 20px !important; }
-        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#080C14', fontFamily: "'Space Mono', monospace", color: '#C8D8E8', display: 'flex', flexDirection: 'column' }}>
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'linear-gradient(rgba(200,149,42,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(200,149,42,0.012) 1px,transparent 1px)', backgroundSize: '52px 52px' }} />
 
         {/* Header */}
-        <div className="cad-header" style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid #1E2D42', height: 54, display: 'flex', alignItems: 'center' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C8952A' }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#ccd8e0', letterSpacing: 3 }}>KONKLAVE</span>
+        <div className="relative z-[1] flex items-center border-b px-4 sm:px-8 lg:px-11 h-14" style={{ borderColor: '#1E2D42' }}>
+          <Link href="/" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C8952A' }} />
+            <span className="text-sm font-bold tracking-[3px]" style={{ fontFamily: "'Space Mono', monospace", color: '#ccd8e0' }}>KONKLAVE</span>
           </Link>
         </div>
 
         {/* Form */}
-        <div className="cad-form-wrap" style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 480 }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3, marginBottom: 20 }}>
+        <div className="relative z-[1] flex-1 flex items-center justify-center px-4 sm:px-8 py-8 sm:py-12">
+          <div className="w-full max-w-md">
+            <div className="text-[9px] tracking-[3px] mb-4" style={{ fontFamily: "'Space Mono', monospace", color: '#C8952A' }}>
               ▸ ACESSO AO CONSELHO
             </div>
 
-            <h1 style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 28, color: '#E8F0F8', marginBottom: 10, lineHeight: 1.3 }}>
+            <h1 className="text-2xl sm:text-3xl mb-2 leading-snug" style={{ fontFamily: "'Libre Baskerville', Georgia, serif", color: '#E8F0F8' }}>
               Crie seu acesso
             </h1>
 
-            <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 14, color: '#6A8AA8', marginBottom: 40, lineHeight: 1.7 }}>
+            <p className="text-sm leading-relaxed mb-8" style={{ fontFamily: "'Libre Baskerville', Georgia, serif", color: '#6A8AA8' }}>
               5 debates gratuitos, sem cartão de crédito. Comece agora.
             </p>
 
-            <div className="cad-card" style={{ background: '#0A0F1A', border: '1px solid #1E2D42', borderTop: '2px solid #C8952A', borderRadius: 2, padding: '32px' }}>
+            <div className="rounded-sm p-6 sm:p-8" style={{ background: '#0A0F1A', border: '1px solid #1E2D42', borderTop: '2px solid #C8952A' }}>
               <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelStyle}>NOME</label>

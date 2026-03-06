@@ -1240,17 +1240,30 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
       abortControllerRef.current = new AbortController()
 
       try {
-        // Phase 1 — opinions (per-member sequential calls)
+        // Helper: fetch members in parallel batches of 3
+        const fetchMembersInBatches = async (
+          members: Member[],
+          fetchFn: (member: Member) => Promise<void>
+        ) => {
+          const BATCH_SIZE = 3
+          for (let i = 0; i < members.length; i += BATCH_SIZE) {
+            if (debateAborted.current) break
+            const batch = members.slice(i, i + BATCH_SIZE)
+            await Promise.allSettled(batch.map(fetchFn))
+          }
+        }
+
+        // Phase 1 — opinions (batches of 3 in parallel)
         initStatuses(setOpStatus, membersToUse)
-        for (const member of membersToUse) {
-          if (debateAborted.current) break
+        await fetchMembersInBatches(membersToUse, async (member) => {
+          if (debateAborted.current) return
           setOpStatus(p => ({ ...p, [member.id]: 'active' }))
           try {
             const data = await callAPI('member-opinion', {
               memberId: member.id,
               question,
               speed,
-            }, abortControllerRef.current.signal)
+            }, abortControllerRef.current!.signal)
             storedRounds.current.opinions[member.id] = data.text
             await typeInto(setOpTexts, member.id, renderMarkdown(data.text))
           } catch {
@@ -1259,8 +1272,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             setOpTexts(p => ({ ...p, [member.id]: errText }))
           }
           setOpStatus(p => ({ ...p, [member.id]: 'done' }))
-          await sleep(150)
-        }
+        })
 
         // Non-blocking convergence after opinions
         callAPI('utility', {
@@ -1271,13 +1283,13 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
         }).then(d => setConvergenceText(d.text || '')).catch(() => { })
 
         if (speed !== 'fast' && !debateAborted.current) {
-          // Phase 2 — debate
+          // Phase 2 — debate (batches of 3 in parallel)
           await showTransition("FASE 2 · DEBATE — Os conselheiros reagem entre si")
           if (debateAborted.current) throw new Error('AbortError')
           setPhase("debate")
           initStatuses(setDebStatus, membersToUse)
-          for (const member of membersToUse) {
-            if (debateAborted.current) break
+          await fetchMembersInBatches(membersToUse, async (member) => {
+            if (debateAborted.current) return
             setDebStatus(p => ({ ...p, [member.id]: 'active' }))
             try {
               const data = await callAPI('member-debate', {
@@ -1285,7 +1297,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                 question,
                 speed,
                 allOpinions: storedRounds.current.opinions,
-              }, abortControllerRef.current.signal)
+              }, abortControllerRef.current!.signal)
               storedRounds.current.debate[member.id] = data.text
               await typeInto(setDebTexts, member.id, renderMarkdown(data.text))
             } catch {
@@ -1294,8 +1306,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               setDebTexts(p => ({ ...p, [member.id]: errText }))
             }
             setDebStatus(p => ({ ...p, [member.id]: 'done' }))
-            await sleep(150)
-          }
+          })
 
           // Gate 1 — replica?
           let wantsReplica: boolean
@@ -1311,8 +1322,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             if (debateAborted.current) throw new Error('AbortError')
             setPhase("replica")
             initStatuses(setRepStatus, membersToUse)
-            for (const member of membersToUse) {
-              if (debateAborted.current) break
+            await fetchMembersInBatches(membersToUse, async (member) => {
+              if (debateAborted.current) return
               setRepStatus(p => ({ ...p, [member.id]: 'active' }))
               try {
                 const data = await callAPI('member-replica', {
@@ -1321,7 +1332,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                   speed,
                   allOpinions: storedRounds.current.opinions,
                   allDebates: storedRounds.current.debate,
-                }, abortControllerRef.current.signal)
+                }, abortControllerRef.current!.signal)
                 storedRounds.current.replica[member.id] = data.text
                 await typeInto(setRepTexts, member.id, renderMarkdown(data.text))
               } catch {
@@ -1330,8 +1341,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                 setRepTexts(p => ({ ...p, [member.id]: errText }))
               }
               setRepStatus(p => ({ ...p, [member.id]: 'done' }))
-              await sleep(150)
-            }
+            })
 
             // Gate 2 — treplica?
             let wantsTreplica: boolean
@@ -1347,8 +1357,8 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               if (debateAborted.current) throw new Error('AbortError')
               setPhase("treplica")
               initStatuses(setTreStatus, membersToUse)
-              for (const member of membersToUse) {
-                if (debateAborted.current) break
+              await fetchMembersInBatches(membersToUse, async (member) => {
+                if (debateAborted.current) return
                 setTreStatus(p => ({ ...p, [member.id]: 'active' }))
                 try {
                   const data = await callAPI('member-treplica', {
@@ -1358,7 +1368,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                     allOpinions: storedRounds.current.opinions,
                     allDebates: storedRounds.current.debate,
                     allReplicas: storedRounds.current.replica,
-                  }, abortControllerRef.current.signal)
+                  }, abortControllerRef.current!.signal)
                   storedRounds.current.treplica[member.id] = data.text
                   await typeInto(setTreTexts, member.id, renderMarkdown(data.text))
                 } catch {
@@ -1367,8 +1377,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                   setTreTexts(p => ({ ...p, [member.id]: errText }))
                 }
                 setTreStatus(p => ({ ...p, [member.id]: 'done' }))
-                await sleep(150)
-              }
+              })
             }
           }
         }
