@@ -67,11 +67,12 @@ export default function CadastroPage() {
     background: '#0B1018',
     border: '1px solid #1E2D42',
     borderRadius: 2,
-    padding: '12px 16px',
+    padding: '14px 16px',
     fontFamily: "'Space Mono', monospace",
-    fontSize: 13,
+    fontSize: 16, // 16px prevents iOS auto-zoom on focus
     color: '#D4E4F0',
     outline: 'none',
+    minHeight: 52,
   }
 
   const labelStyle: React.CSSProperties = {
@@ -90,13 +91,20 @@ export default function CadastroPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         input::placeholder { color: #2A3A4A; }
         input:focus { border-color: rgba(200,149,42,0.5) !important; }
+        .cad-header { padding: 0 44px; }
+        .cad-form-wrap { padding: 40px; }
+        @media (max-width: 767px) {
+          .cad-header { padding: 0 20px; }
+          .cad-form-wrap { padding: 24px 20px; }
+          .cad-card { padding: 24px 20px !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#080C14', fontFamily: "'Space Mono', monospace", color: '#C8D8E8', display: 'flex', flexDirection: 'column' }}>
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'linear-gradient(rgba(200,149,42,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(200,149,42,0.012) 1px,transparent 1px)', backgroundSize: '52px 52px' }} />
 
         {/* Header */}
-        <div style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid #1E2D42', padding: '0 44px', height: 54, display: 'flex', alignItems: 'center' }}>
+        <div className="cad-header" style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid #1E2D42', height: 54, display: 'flex', alignItems: 'center' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C8952A' }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#ccd8e0', letterSpacing: 3 }}>KONKLAVE</span>
@@ -104,7 +112,7 @@ export default function CadastroPage() {
         </div>
 
         {/* Form */}
-        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+        <div className="cad-form-wrap" style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: 480 }}>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3, marginBottom: 20 }}>
               ▸ ACESSO AO CONSELHO
@@ -118,7 +126,7 @@ export default function CadastroPage() {
               5 debates gratuitos, sem cartão de crédito. Comece agora.
             </p>
 
-            <div style={{ background: '#0A0F1A', border: '1px solid #1E2D42', borderTop: '2px solid #C8952A', borderRadius: 2, padding: '32px' }}>
+            <div className="cad-card" style={{ background: '#0A0F1A', border: '1px solid #1E2D42', borderTop: '2px solid #C8952A', borderRadius: 2, padding: '32px' }}>
               <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelStyle}>NOME</label>

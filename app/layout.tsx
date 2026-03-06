@@ -18,6 +18,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <head>
         <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={`${inter.className} bg-[#070910] text-gray-100 min-h-screen`}>
         {children}

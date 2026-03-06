@@ -6,6 +6,34 @@ export default function Home() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        .lp-header { padding: 0 44px; }
+        .lp-hero { padding: 100px 40px 80px; }
+        .lp-title { font-size: 64px; letter-spacing: 8px; }
+        .lp-subtitle { font-size: 22px; }
+        .lp-body { font-size: 15px; }
+        .lp-cta { display: inline-block; padding: 16px 40px; font-size: 12px; }
+        .lp-benefits { padding: 72px 40px 100px; }
+        .lp-benefits-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .lp-footer { padding: 24px 44px; }
+        @media (max-width: 767px) {
+          .lp-header { padding: 0 20px; }
+          .lp-hero { padding: 52px 24px 48px; }
+          .lp-title { font-size: 38px; letter-spacing: 4px; }
+          .lp-subtitle { font-size: 18px; }
+          .lp-body { font-size: 14px; max-width: 100% !important; }
+          .lp-cta { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0 24px; height: 56px; font-size: 14px; text-align: center; }
+          .lp-benefits { padding: 40px 24px 60px; }
+          .lp-benefits-grid { grid-template-columns: 1fr; }
+          .lp-footer { flex-direction: column; gap: 8px; padding: 20px 24px; }
+        }
+        @media (min-width: 768px) and (max-width: 1024px) {
+          .lp-header { padding: 0 28px; }
+          .lp-hero { padding: 72px 32px 64px; }
+          .lp-title { font-size: 52px; }
+          .lp-benefits { padding: 56px 32px 80px; }
+          .lp-benefits-grid { grid-template-columns: 1fr 1fr; }
+          .lp-footer { padding: 20px 28px; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#080C14', fontFamily: "'Space Mono', monospace", color: '#C8D8E8' }}>
@@ -13,7 +41,7 @@ export default function Home() {
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'linear-gradient(rgba(200,149,42,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(200,149,42,0.012) 1px,transparent 1px)', backgroundSize: '52px 52px' }} />
 
         {/* Header */}
-        <div style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid #1E2D42', padding: '0 44px', height: 54, display: 'flex', alignItems: 'center' }}>
+        <div className="lp-header" style={{ position: 'relative', zIndex: 1, borderBottom: '1px solid #1E2D42', height: 54, display: 'flex', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C8952A' }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#ccd8e0', letterSpacing: 3 }}>KONKLAVE</span>
@@ -26,32 +54,29 @@ export default function Home() {
         </div>
 
         {/* Hero */}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '100px 40px 80px', textAlign: 'center' }}>
+        <div className="lp-hero" style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 4, marginBottom: 32 }}>
             ▸ SISTEMA DE DELIBERAÇÃO POR INTELIGÊNCIA ARTIFICIAL
           </div>
 
-          <h1 style={{ fontFamily: "'Space Mono', monospace", fontSize: 64, fontWeight: 700, color: '#E8F0F8', letterSpacing: 8, marginBottom: 32, lineHeight: 1 }}>
+          <h1 className="lp-title" style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: '#E8F0F8', marginBottom: 32, lineHeight: 1 }}>
             KONKLAVE
           </h1>
 
-          <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 22, color: '#A0B8CC', lineHeight: 1.7, marginBottom: 16, fontStyle: 'italic' }}>
+          <p className="lp-subtitle" style={{ fontFamily: "'Libre Baskerville', Georgia, serif", color: '#A0B8CC', lineHeight: 1.7, marginBottom: 16, fontStyle: 'italic' }}>
             Convoque suas inteligências. Debata. Decida.
           </p>
 
-          <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 15, color: '#6A8AA8', lineHeight: 1.9, maxWidth: 580, margin: '0 auto 52px' }}>
+          <p className="lp-body" style={{ fontFamily: "'Libre Baskerville', Georgia, serif", color: '#6A8AA8', lineHeight: 1.9, maxWidth: 580, margin: '0 auto 52px' }}>
             Submeta uma questão difícil a um conselho de cinco IAs com perspectivas distintas.
             Elas debatem em fases estruturadas e entregam um veredito fundamentado.
           </p>
 
-          <Link href="/cadastro" style={{
-            display: 'inline-block',
-            padding: '16px 40px',
+          <Link href="/cadastro" className="lp-cta" style={{
             background: '#C8952A',
             color: '#070910',
             textDecoration: 'none',
             fontFamily: "'Space Mono', monospace",
-            fontSize: 12,
             fontWeight: 700,
             letterSpacing: 2,
             borderRadius: 2,
@@ -71,12 +96,12 @@ export default function Home() {
         </div>
 
         {/* Benefit cards */}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '72px 40px 100px' }}>
+        <div className="lp-benefits" style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto' }}>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#6A8AA8', letterSpacing: 3, textAlign: 'center', marginBottom: 48 }}>
             COMO FUNCIONA
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+          <div className="lp-benefits-grid">
             {[
               {
                 phase: '01',
@@ -119,7 +144,7 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div style={{ position: 'relative', zIndex: 1, borderTop: '1px solid #1E2D42', padding: '24px 44px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="lp-footer" style={{ position: 'relative', zIndex: 1, borderTop: '1px solid #1E2D42', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#2A3A4A', letterSpacing: 2 }}>
             KONKLAVE · VERTEKIA
           </span>

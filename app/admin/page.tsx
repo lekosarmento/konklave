@@ -179,10 +179,35 @@ export default function AdminPage() {
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #080C14; }
         ::-webkit-scrollbar-thumb { background: #1E2D42; border-radius: 3px; }
+        .adm-header { padding: 0 44px; }
+        .adm-body { padding: 40px 40px 80px; }
+        .adm-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .adm-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+        .adm-users-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 28px; }
+        .adm-feedback-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
+        .adm-header-right { display: flex; align-items: center; gap: 16px; }
+        .adm-header-updated { display: block; }
+        .adm-table-wrap { overflow-x: auto; }
+        @media (max-width: 767px) {
+          .adm-header { padding: 0 16px; }
+          .adm-body { padding: 20px 16px 60px; }
+          .adm-stat-grid { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+          .adm-chart-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+          .adm-users-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+          .adm-feedback-grid { grid-template-columns: 1fr; }
+          .adm-header-updated { display: none; }
+        }
+        @media (min-width: 768px) and (max-width: 1024px) {
+          .adm-header { padding: 0 24px; }
+          .adm-body { padding: 28px 24px 60px; }
+          .adm-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+          .adm-chart-grid { grid-template-columns: 1fr; }
+          .adm-users-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       {/* HEADER */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(8,12,20,0.98)', borderBottom: '1px solid #1E2D42', padding: '0 44px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="adm-header" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(8,12,20,0.98)', borderBottom: '1px solid #1E2D42', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#C8952A' }} />
@@ -191,9 +216,9 @@ export default function AdminPage() {
           <div style={{ width: 1, height: 18, background: '#1E2D42' }} />
           <span style={{ fontSize: 8, color: '#C8952A', letterSpacing: 2 }}>PAINEL DE CONTROLE</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="adm-header-right">
           {lastUpdated && (
-            <span style={{ fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
+            <span className="adm-header-updated" style={{ fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
               Última atualização: {lastUpdated}
             </span>
           )}
@@ -213,7 +238,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 40px 80px' }}>
+      <div className="adm-body" style={{ maxWidth: 1200, margin: '0 auto' }}>
 
         {/* Loading */}
         {loading && !s && (
@@ -225,7 +250,7 @@ export default function AdminPage() {
         {s && (
           <>
             {/* ── STAT CARDS ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+            <div className="adm-stat-grid">
               <StatCard label="Total de Usuários"  value={s.totalUsers}   sub="cadastros"          color="#C8952A" />
               <StatCard label="Total de Debates"   value={s.totalDebates} sub="sessões realizadas"  color="#3DAA6E" />
               <StatCard label="Avaliação Média"    value={`${s.avgRating} ★`} sub="de 5.0"         color="#4A8FD4" />
@@ -233,21 +258,22 @@ export default function AdminPage() {
             </div>
 
             {/* ── CHARTS ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
+            <div className="adm-chart-grid">
               <BarChart data={s.usersPerDay}   color="#C8952A" title="NOVOS USUÁRIOS — ÚLTIMOS 14 DIAS" />
               <BarChart data={s.debatesPerDay} color="#4A8FD4" title="DEBATES POR DIA — ÚLTIMOS 14 DIAS" />
             </div>
 
             {/* ── TOP USERS + RATING DISTRIBUTION ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 28 }}>
+            <div className="adm-users-grid">
 
               {/* Top Users Table */}
-              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden', minWidth: 0 }}>
                 <div style={{ padding: '18px 24px', borderBottom: '1px solid #1E2D42' }}>
                   <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3 }}>USUÁRIOS MAIS ATIVOS</div>
                 </div>
                 {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', padding: '10px 24px', borderBottom: '1px solid #1E2D42', background: '#0A0F1A' }}>
+                <div className="adm-table-wrap" style={{ overflowX: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '10px 24px', borderBottom: '1px solid #1E2D42', background: '#0A0F1A' }}>
                   {['NOME', 'EMAIL', 'DEBATES', 'CADASTRO'].map(h => (
                     <div key={h} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: '#C8952A', letterSpacing: 2 }}>{h}</div>
                   ))}
@@ -260,7 +286,7 @@ export default function AdminPage() {
                 {s.topUsers.map((u, i) => (
                   <div
                     key={`${u.email}-${i}`}
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', padding: '13px 24px', background: i % 2 === 1 ? 'rgba(255,255,255,0.018)' : 'transparent', borderBottom: '1px solid rgba(30,45,66,0.5)' }}
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '13px 24px', background: i % 2 === 1 ? 'rgba(255,255,255,0.018)' : 'transparent', borderBottom: '1px solid rgba(30,45,66,0.5)' }}
                   >
                     <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8D8E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.nome || '—'}</div>
                     <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.email}</div>
@@ -270,6 +296,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+                </div>{/* /adm-table-wrap */}
               </div>
 
               {/* Rating Distribution */}
@@ -308,7 +335,7 @@ export default function AdminPage() {
                   Nenhum feedback ainda.
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              <div className="adm-feedback-grid">
                 {s.recentFeedbacks.map((f, i) => (
                   <div
                     key={i}
