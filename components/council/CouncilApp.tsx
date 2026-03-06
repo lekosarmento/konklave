@@ -930,6 +930,10 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const [repStatus, setRepStatus] = useState<StatusMap>({})
   const [treTexts, setTreTexts] = useState<TextMap>({})
   const [treStatus, setTreStatus] = useState<StatusMap>({})
+  const [opTimestamps, setOpTimestamps] = useState<Record<string, number>>({})
+  const [debTimestamps, setDebTimestamps] = useState<Record<string, number>>({})
+  const [repTimestamps, setRepTimestamps] = useState<Record<string, number>>({})
+  const [treTimestamps, setTreTimestamps] = useState<Record<string, number>>({})
   const [verdict, setVerdict] = useState("")
   const [verdictSummary, setVerdictSummary] = useState("")
   const [verdictLoading, setVerdictLoading] = useState(false)
@@ -976,6 +980,24 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
   const shareCardFeedRef = useRef<HTMLDivElement>(null)
 
   const activeMembers = MEMBERS.filter(m => selectedMembers.has(m.id))
+
+  // Per-phase ordering: responded first (by arrival time), loading last
+  const opOrdered = [
+    ...activeMembers.filter(m => opTexts[m.id] && !opTexts[m.id].startsWith('[Erro')).sort((a, b) => (opTimestamps[a.id] || 0) - (opTimestamps[b.id] || 0)),
+    ...activeMembers.filter(m => !opTexts[m.id] || opTexts[m.id].startsWith('[Erro')),
+  ]
+  const debOrdered = [
+    ...activeMembers.filter(m => debTexts[m.id] && !debTexts[m.id].startsWith('[Erro')).sort((a, b) => (debTimestamps[a.id] || 0) - (debTimestamps[b.id] || 0)),
+    ...activeMembers.filter(m => !debTexts[m.id] || debTexts[m.id].startsWith('[Erro')),
+  ]
+  const repOrdered = [
+    ...activeMembers.filter(m => repTexts[m.id] && !repTexts[m.id].startsWith('[Erro')).sort((a, b) => (repTimestamps[a.id] || 0) - (repTimestamps[b.id] || 0)),
+    ...activeMembers.filter(m => !repTexts[m.id] || repTexts[m.id].startsWith('[Erro')),
+  ]
+  const treOrdered = [
+    ...activeMembers.filter(m => treTexts[m.id] && !treTexts[m.id].startsWith('[Erro')).sort((a, b) => (treTimestamps[a.id] || 0) - (treTimestamps[b.id] || 0)),
+    ...activeMembers.filter(m => !treTexts[m.id] || treTexts[m.id].startsWith('[Erro')),
+  ]
 
   const showOp = !["idle", "write_question", "select_category", "select_council"].includes(phase)
   const showDeb = ["debate", "ask_replica", "replica", "ask_treplica", "treplica", "ask_president", "verdict", "done"].includes(phase)
@@ -1340,6 +1362,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     setDebTexts({}); setDebStatus({})
     setRepTexts({}); setRepStatus({})
     setTreTexts({}); setTreStatus({})
+    setOpTimestamps({}); setDebTimestamps({}); setRepTimestamps({}); setTreTimestamps({})
     setVerdict(""); setElectedPresident(null)
     storedRounds.current = { opinions: {}, debate: {}, replica: {}, treplica: {} }
 
@@ -1374,6 +1397,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             }, abortControllerRef.current!.signal)
             storedRounds.current.opinions[member.id] = data.text
             await typeInto(setOpTexts, member.id, renderMarkdown(data.text))
+            setOpTimestamps(prev => ({ ...prev, [member.id]: Date.now() }))
           } catch {
             const errText = '[Erro: timeout ou falha na conexão]'
             storedRounds.current.opinions[member.id] = errText
@@ -1408,6 +1432,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               }, abortControllerRef.current!.signal)
               storedRounds.current.debate[member.id] = data.text
               await typeInto(setDebTexts, member.id, renderMarkdown(data.text))
+              setDebTimestamps(prev => ({ ...prev, [member.id]: Date.now() }))
             } catch {
               const errText = '[Erro: timeout ou falha na conexão]'
               storedRounds.current.debate[member.id] = errText
@@ -1443,6 +1468,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                 }, abortControllerRef.current!.signal)
                 storedRounds.current.replica[member.id] = data.text
                 await typeInto(setRepTexts, member.id, renderMarkdown(data.text))
+                setRepTimestamps(prev => ({ ...prev, [member.id]: Date.now() }))
               } catch {
                 const errText = '[Erro: timeout ou falha na conexão]'
                 storedRounds.current.replica[member.id] = errText
@@ -1479,6 +1505,7 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
                   }, abortControllerRef.current!.signal)
                   storedRounds.current.treplica[member.id] = data.text
                   await typeInto(setTreTexts, member.id, renderMarkdown(data.text))
+                  setTreTimestamps(prev => ({ ...prev, [member.id]: Date.now() }))
                 } catch {
                   const errText = '[Erro: timeout ou falha na conexão]'
                   storedRounds.current.treplica[member.id] = errText
@@ -2113,16 +2140,20 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
               <SectionHeader label="— FASE 1 · OPINIÕES INDEPENDENTES" active={phase === "opinions"} done={phase !== "opinions"} />
               {isDebateActive && <PhaseProgressBar currentPhase={phase} />}
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map((m, idx) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
-                  >
-                    <MemberCard member={m} status={opStatus[m.id] || "pending"} text={opTexts[m.id] || ""} loading={isLoading && phase === "opinions"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
-                  </motion.div>
-                ))}
+                <AnimatePresence>
+                  {opOrdered.map((m, idx) => (
+                    <motion.div
+                      key={m.id}
+                      layout
+                      layoutId={`op-${m.id}`}
+                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05, layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+                    >
+                      <MemberCard member={m} status={opStatus[m.id] || "pending"} text={opTexts[m.id] || ""} loading={isLoading && phase === "opinions"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           )}
@@ -2132,16 +2163,20 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: showAskRep ? 0 : 52 }}>
               <SectionHeader label="— FASE 2 · DEBATE" active={phase === "debate"} done={!["opinions", "debate"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map((m, idx) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
-                  >
-                    <MemberCard member={m} status={debStatus[m.id] || "pending"} text={debTexts[m.id] || ""} loading={isLoading && phase === "debate"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
-                  </motion.div>
-                ))}
+                <AnimatePresence>
+                  {debOrdered.map((m, idx) => (
+                    <motion.div
+                      key={m.id}
+                      layout
+                      layoutId={`deb-${m.id}`}
+                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05, layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+                    >
+                      <MemberCard member={m} status={debStatus[m.id] || "pending"} text={debTexts[m.id] || ""} loading={isLoading && phase === "debate"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           )}
@@ -2153,16 +2188,20 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: showAskTre ? 0 : 52 }}>
               <SectionHeader label="— FASE 3 · RÉPLICA" active={phase === "replica"} done={!["opinions", "debate", "ask_replica", "replica"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map((m, idx) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
-                  >
-                    <MemberCard member={m} status={repStatus[m.id] || "pending"} text={repTexts[m.id] || ""} loading={isLoading && phase === "replica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
-                  </motion.div>
-                ))}
+                <AnimatePresence>
+                  {repOrdered.map((m, idx) => (
+                    <motion.div
+                      key={m.id}
+                      layout
+                      layoutId={`rep-${m.id}`}
+                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05, layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+                    >
+                      <MemberCard member={m} status={repStatus[m.id] || "pending"} text={repTexts[m.id] || ""} loading={isLoading && phase === "replica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           )}
@@ -2174,16 +2213,20 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
             <div style={{ marginBottom: 52 }}>
               <SectionHeader label="— FASE 4 · TRÉPLICA" active={phase === "treplica"} done={["ask_president", "verdict", "done"].includes(phase)} />
               <div className="grid-cols-1 sm:grid-cols-2" style={{ display: "grid", gap: 14 }}>
-                {activeMembers.map((m, idx) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05 }}
-                  >
-                    <MemberCard member={m} status={treStatus[m.id] || "pending"} text={treTexts[m.id] || ""} loading={isLoading && phase === "treplica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
-                  </motion.div>
-                ))}
+                <AnimatePresence>
+                  {treOrdered.map((m, idx) => (
+                    <motion.div
+                      key={m.id}
+                      layout
+                      layoutId={`tre-${m.id}`}
+                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay: idx * 0.05, layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+                    >
+                      <MemberCard member={m} status={treStatus[m.id] || "pending"} text={treTexts[m.id] || ""} loading={isLoading && phase === "treplica"} loadingMessage={LOADING_MESSAGES[loadingMsgIdx]} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           )}
