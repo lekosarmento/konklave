@@ -1265,11 +1265,19 @@ export default function CouncilApp({ user }: { user: KonklaveUser }) {
     userData.usos = (userData.usos || 0) + 1
     localStorage.setItem('konklave_user', JSON.stringify(userData))
     setUsos(userData.usos)
-    fetch('/api/leads', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: userData.email, usos: userData.usos }),
-    }).then(r => { if (!r.ok) r.json().then(e => console.error('Supabase update error:', e)) })
+    try {
+      const updateRes = await fetch('/api/leads/update-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userData.email }),
+      })
+      if (!updateRes.ok) {
+        const err = await updateRes.json().catch(() => ({}))
+        console.warn('Usage update failed (non-critical):', err)
+      }
+    } catch (e) {
+      console.warn('Usage update failed (non-critical):', e)
+    }
 
     setPhase("opinions"); setElapsed(0); setError("")
     setOpTexts({}); setOpStatus({})

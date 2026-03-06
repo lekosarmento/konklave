@@ -3,6 +3,13 @@ export interface ORMessage {
     content: string
 }
 
+const FALLBACK_MODELS = [
+    'google/gemini-2.0-flash-001',
+    'anthropic/claude-haiku-4-5-20251001',
+    'openai/gpt-4o-mini',
+    'meta-llama/llama-3.1-8b-instruct:free',
+]
+
 export async function callOpenRouter(
     model: string,
     messages: ORMessage[],
@@ -50,6 +57,11 @@ function isTimeoutError(e: unknown): boolean {
     )
 }
 
+function is404Error(e: unknown): boolean {
+    if (!(e instanceof Error)) return false
+    return e.message.includes('404') || e.message.includes('No endpoints found')
+}
+
 export async function callOpenRouterWithRetry(
     model: string,
     messages: ORMessage[],
@@ -59,9 +71,23 @@ export async function callOpenRouterWithRetry(
     try {
         return await callOpenRouter(model, messages, maxTokens, timeoutMs)
     } catch (e) {
-        if (!isTimeoutError(e)) throw e
-        console.log(`[openrouter] timeout on ${model}, retrying in 2s...`)
-        await new Promise(r => setTimeout(r, 2000))
-        return await callOpenRouter(model, messages, maxTokens, timeoutMs)
+        if (isTimeoutError(e)) {
+            console.log(`[openrouter] timeout on ${model}, retrying in 2s...`)
+            await new Promise(r => setTimeout(r, 2000))
+            return await callOpenRouter(model, messages, maxTokens, timeoutMs)
+        }
+        if (is404Error(e)) {
+            console.log(`[openrouter] 404 on ${model}, trying fallbacks...`)
+            for (const fallback of FALLBACK_MODELS) {
+                if (fallback === model) continue
+                try {
+                    console.log(`[openrouter] fallback: ${fallback}`)
+                    return await callOpenRouter(fallback, messages, maxTokens, timeoutMs)
+                } catch (fe) {
+                    console.log(`[openrouter] fallback ${fallback} failed:`, (fe as Error).message)
+                }
+            }
+        }
+        throw e
     }
 }
