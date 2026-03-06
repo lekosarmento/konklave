@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 
 interface DayCount { date: string; count: number }
 interface TopUser { nome: string; email: string; usos: number; criado_em: string }
-interface RecentFeedback { email: string; rating: number; comment: string; questao: string; criado_em: string }
+interface RecentFeedback { email: string; rating: number; comentario: string | null; questao: string | null; criado_em: string }
 interface RatingDist { rating: number; count: number }
+interface Retention { onetime: number; returning: number; power: number }
+interface RecentDebate { email: string | null; questao: string | null; rating: number | null; criado_em: string }
 
 interface Stats {
   totalUsers: number
@@ -16,7 +18,9 @@ interface Stats {
   debatesPerDay: DayCount[]
   topUsers: TopUser[]
   recentFeedbacks: RecentFeedback[]
+  recentDebates: RecentDebate[]
   ratingDistribution: RatingDist[]
+  retention: Retention
 }
 
 // ─── BAR CHART ────────────────────────────────────────────────
@@ -46,6 +50,35 @@ function BarChart({ data, color, title }: { data: DayCount[]; color: string; tit
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── RETENTION CHART ──────────────────────────────────────────
+function RetentionChart({ retention }: { retention: Retention }) {
+  const total = retention.onetime + retention.returning + retention.power || 1
+  const rows = [
+    { label: '1 debate', count: retention.onetime, color: '#6A8AA8' },
+    { label: '2–3 debates', count: retention.returning, color: '#C8952A' },
+    { label: '4+ debates', count: retention.power, color: '#4CAF50' },
+  ]
+  return (
+    <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderTop: '2px solid rgba(200,149,42,0.3)', borderRadius: 2, padding: '24px' }}>
+      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3, marginBottom: 24 }}>RETENÇÃO DE USUÁRIOS</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {rows.map(r => (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', width: 70, flexShrink: 0 }}>{r.label}</div>
+            <div style={{ flex: 1, height: 8, background: '#0B1018', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${(r.count / total) * 100}%`, background: r.color, borderRadius: 4, minWidth: r.count > 0 ? 4 : 0, transition: 'width 0.5s ease' }} />
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: r.color, width: 24, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{r.count}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #1E2D42', fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
+        {total} usuário{total !== 1 ? 's' : ''} com pelo menos 1 debate
       </div>
     </div>
   )
@@ -132,6 +165,25 @@ export default function AdminPage() {
     setStoredPwd('')
   }
 
+  const handleExportCSV = () => {
+    if (!stats) return
+    const headers = ['Nome', 'Email', 'Debates', 'Cadastro']
+    const rows = stats.topUsers.map(u => [
+      u.nome,
+      u.email,
+      u.usos,
+      new Date(u.criado_em).toLocaleDateString('pt-BR'),
+    ])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `konklave-leads-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   // ─── PASSWORD SCREEN ──────────────────────────────────────
   if (!authenticated) {
     return (
@@ -183,16 +235,20 @@ export default function AdminPage() {
         .adm-body { padding: 40px 40px 80px; }
         .adm-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
         .adm-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+        .adm-retention-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
         .adm-users-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 28px; }
         .adm-feedback-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
         .adm-header-right { display: flex; align-items: center; gap: 16px; }
         .adm-header-updated { display: block; }
         .adm-table-wrap { overflow-x: auto; }
+        .adm-export-btn { border: 1px solid #C8952A; color: #C8952A; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; padding: 7px 16px; background: transparent; border-radius: 2px; cursor: pointer; transition: all 0.2s; }
+        .adm-export-btn:hover { background: #C8952A; color: #080C14; }
         @media (max-width: 767px) {
           .adm-header { padding: 0 16px; }
           .adm-body { padding: 20px 16px 60px; }
           .adm-stat-grid { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
           .adm-chart-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+          .adm-retention-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
           .adm-users-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
           .adm-feedback-grid { grid-template-columns: 1fr; }
           .adm-header-updated { display: none; }
@@ -202,6 +258,7 @@ export default function AdminPage() {
           .adm-body { padding: 28px 24px 60px; }
           .adm-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
           .adm-chart-grid { grid-template-columns: 1fr; }
+          .adm-retention-grid { grid-template-columns: 1fr; }
           .adm-users-grid { grid-template-columns: 1fr; }
         }
       `}</style>
@@ -221,6 +278,11 @@ export default function AdminPage() {
             <span className="adm-header-updated" style={{ fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
               Última atualização: {lastUpdated}
             </span>
+          )}
+          {s && (
+            <button className="adm-export-btn" onClick={handleExportCSV}>
+              EXPORTAR CSV
+            </button>
           )}
           <button
             onClick={() => fetchStats(storedPwd)}
@@ -263,70 +325,74 @@ export default function AdminPage() {
               <BarChart data={s.debatesPerDay} color="#4A8FD4" title="DEBATES POR DIA — ÚLTIMOS 14 DIAS" />
             </div>
 
-            {/* ── TOP USERS + RATING DISTRIBUTION ── */}
-            <div className="adm-users-grid">
-
-              {/* Top Users Table */}
-              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden', minWidth: 0 }}>
-                <div style={{ padding: '18px 24px', borderBottom: '1px solid #1E2D42' }}>
-                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3 }}>USUÁRIOS MAIS ATIVOS</div>
+            {/* ── RETENTION ── */}
+            {s.retention && (
+              <div className="adm-retention-grid">
+                <RetentionChart retention={s.retention} />
+                {/* Rating Distribution */}
+                <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderTop: '2px solid rgba(200,149,42,0.3)', borderRadius: 2, padding: '24px' }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3, marginBottom: 24 }}>DISTRIBUIÇÃO DE AVALIAÇÕES</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {s.ratingDistribution.map(r => {
+                      const total = s.ratingDistribution.reduce((sum, x) => sum + x.count, 0)
+                      const pct = total > 0 ? (r.count / total) * 100 : 0
+                      return (
+                        <div key={r.rating} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', width: 26, textAlign: 'right', flexShrink: 0 }}>{r.rating}★</div>
+                          <div style={{ flex: 1, height: 8, background: '#0B1018', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: '#C8952A', borderRadius: 4, minWidth: pct > 0 ? 4 : 0, transition: 'width 0.5s ease' }} />
+                          </div>
+                          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', width: 28, textAlign: 'right', flexShrink: 0 }}>{r.count}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {s.totalFeedbacks > 0 && (
+                    <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #1E2D42', fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
+                      {s.totalFeedbacks} avaliações no total
+                    </div>
+                  )}
                 </div>
-                {/* Table header */}
-                <div className="adm-table-wrap" style={{ overflowX: 'auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '10px 24px', borderBottom: '1px solid #1E2D42', background: '#0A0F1A' }}>
-                  {['NOME', 'EMAIL', 'DEBATES', 'CADASTRO'].map(h => (
-                    <div key={h} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: '#C8952A', letterSpacing: 2 }}>{h}</div>
+              </div>
+            )}
+
+            {/* ── TOP USERS ── */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #1E2D42', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3 }}>USUÁRIOS MAIS ATIVOS</div>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70' }}>{s.topUsers.length} total · exibindo top 10</div>
+                </div>
+                <div className="adm-table-wrap">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '10px 24px', borderBottom: '1px solid #1E2D42', background: '#0A0F1A' }}>
+                    {['NOME', 'EMAIL', 'DEBATES', 'CADASTRO'].map(h => (
+                      <div key={h} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: '#C8952A', letterSpacing: 2 }}>{h}</div>
+                    ))}
+                  </div>
+                  {s.topUsers.length === 0 && (
+                    <div style={{ padding: '28px 24px', fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: '#3A5A70', fontStyle: 'italic' }}>
+                      Nenhum dado disponível.
+                    </div>
+                  )}
+                  {s.topUsers.slice(0, 10).map((u, i) => (
+                    <div
+                      key={`${u.email}-${i}`}
+                      style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '13px 24px', background: i % 2 === 1 ? 'rgba(255,255,255,0.018)' : 'transparent', borderBottom: '1px solid rgba(30,45,66,0.5)' }}
+                    >
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8D8E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.nome || '—'}</div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.email}</div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: '#C8952A', fontWeight: 700 }}>{u.usos ?? 0}</div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70' }}>
+                        {u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '—'}
+                      </div>
+                    </div>
                   ))}
                 </div>
-                {s.topUsers.length === 0 && (
-                  <div style={{ padding: '28px 24px', fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: '#3A5A70', fontStyle: 'italic' }}>
-                    Nenhum dado disponível.
-                  </div>
-                )}
-                {s.topUsers.map((u, i) => (
-                  <div
-                    key={`${u.email}-${i}`}
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 70px 90px', minWidth: 320, padding: '13px 24px', background: i % 2 === 1 ? 'rgba(255,255,255,0.018)' : 'transparent', borderBottom: '1px solid rgba(30,45,66,0.5)' }}
-                  >
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8D8E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.nome || '—'}</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>{u.email}</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: '#C8952A', fontWeight: 700 }}>{u.usos ?? 0}</div>
-                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70' }}>
-                      {u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '—'}
-                    </div>
-                  </div>
-                ))}
-                </div>{/* /adm-table-wrap */}
-              </div>
-
-              {/* Rating Distribution */}
-              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, padding: '24px' }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3, marginBottom: 24 }}>DISTRIBUIÇÃO DE AVALIAÇÕES</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {s.ratingDistribution.map(r => {
-                    const total = s.ratingDistribution.reduce((sum, x) => sum + x.count, 0)
-                    const pct = total > 0 ? (r.count / total) * 100 : 0
-                    return (
-                      <div key={r.rating} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', width: 26, textAlign: 'right', flexShrink: 0 }}>{r.rating}★</div>
-                        <div style={{ flex: 1, height: 8, background: '#0B1018', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: '#C8952A', borderRadius: 4, minWidth: pct > 0 ? 4 : 0, transition: 'width 0.5s ease' }} />
-                        </div>
-                        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', width: 28, textAlign: 'right', flexShrink: 0 }}>{r.count}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-                {s.totalFeedbacks > 0 && (
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #1E2D42', fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70', letterSpacing: 1 }}>
-                    {s.totalFeedbacks} avaliações no total
-                  </div>
-                )}
               </div>
             </div>
 
             {/* ── RECENT FEEDBACKS ── */}
-            <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden', marginBottom: 28 }}>
               <div style={{ padding: '18px 24px', borderBottom: '1px solid #1E2D42' }}>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3 }}>FEEDBACKS RECENTES</div>
               </div>
@@ -341,6 +407,7 @@ export default function AdminPage() {
                     key={i}
                     style={{ padding: '18px 20px', borderBottom: '1px solid rgba(30,45,66,0.6)', borderRight: i % 2 === 0 ? '1px solid rgba(30,45,66,0.6)' : 'none', background: i % 4 < 2 ? 'transparent' : 'rgba(255,255,255,0.012)' }}
                   >
+                    {/* Stars + date */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div style={{ fontSize: 14, color: '#C8952A', letterSpacing: 3 }}>
                         {'★'.repeat(f.rating)}
@@ -350,16 +417,23 @@ export default function AdminPage() {
                         {f.criado_em ? new Date(f.criado_em).toLocaleDateString('pt-BR') : '—'}
                       </div>
                     </div>
-                    {f.comment && (
+                    {/* Comment (main text) */}
+                    {f.comentario ? (
                       <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 12, color: '#B0C4D8', lineHeight: 1.65, marginBottom: 8 }}>
-                        &ldquo;{f.comment}&rdquo;
+                        &ldquo;{f.comentario}&rdquo;
+                      </p>
+                    ) : (
+                      <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: '#2A3A4A', fontStyle: 'italic', marginBottom: 8 }}>
+                        sem comentário
                       </p>
                     )}
+                    {/* Question (subtitle) */}
                     {f.questao && (
-                      <p style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: '#6A8AA8', fontStyle: 'italic', marginBottom: 6 }}>
-                        {f.questao.slice(0, 100)}{f.questao.length > 100 ? '...' : ''}
+                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#4A6A80', fontStyle: 'italic', marginBottom: 6, lineHeight: 1.5 }}>
+                        Questão: {f.questao.slice(0, 60)}{f.questao.length > 60 ? '...' : ''}
                       </p>
                     )}
+                    {/* Email */}
                     <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: '#2A3A4A', letterSpacing: 1 }}>
                       {f.email || 'anônimo'}
                     </div>
@@ -367,6 +441,41 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+
+            {/* ── ÚLTIMOS DEBATES ── */}
+            {s.recentDebates && s.recentDebates.length > 0 && (
+              <div style={{ background: '#0F1520', border: '1px solid #1E2D42', borderRadius: 2, overflow: 'hidden', marginBottom: 28 }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #1E2D42' }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: '#C8952A', letterSpacing: 3 }}>ÚLTIMOS DEBATES</div>
+                </div>
+                <div className="adm-table-wrap">
+                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 1.5fr 80px 80px', minWidth: 480, padding: '10px 24px', borderBottom: '1px solid #1E2D42', background: '#0A0F1A' }}>
+                    {['QUESTÃO', 'USUÁRIO', 'AVALIAÇÃO', 'DATA'].map(h => (
+                      <div key={h} style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: '#C8952A', letterSpacing: 2 }}>{h}</div>
+                    ))}
+                  </div>
+                  {s.recentDebates.map((d, i) => (
+                    <div
+                      key={i}
+                      style={{ display: 'grid', gridTemplateColumns: '3fr 1.5fr 80px 80px', minWidth: 480, padding: '13px 24px', background: i % 2 === 1 ? 'rgba(255,255,255,0.018)' : 'transparent', borderBottom: '1px solid rgba(30,45,66,0.5)' }}
+                    >
+                      <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontSize: 11, color: '#B0C4D8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 16 }}>
+                        {d.questao ? `${d.questao.slice(0, 80)}${d.questao.length > 80 ? '...' : ''}` : '—'}
+                      </div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#6A8AA8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 10 }}>
+                        {d.email || 'anônimo'}
+                      </div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: '#C8952A' }}>
+                        {d.rating ? '★'.repeat(d.rating) : <span style={{ color: '#2A3A4A' }}>—</span>}
+                      </div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: '#3A5A70' }}>
+                        {d.criado_em ? new Date(d.criado_em).toLocaleDateString('pt-BR') : '—'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -89,15 +89,15 @@ export async function GET(req: NextRequest) {
   }
   if (feedbacksWithDates.error) errors['feedbacksWithDates'] = feedbacksWithDates.error
 
-  // ── TOP USERS — try criado_em first, fallback created_at ──
+  // ── ALL LEADS (for CSV export + top users table) ──────────
   let topUsersDateField = 'criado_em'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let topUsers: { data: any[] | null; error: any } = await supabase.from('leads').select('nome, email, usos, criado_em').order('usos', { ascending: false }).limit(10)
+  let topUsers: { data: any[] | null; error: any } = await supabase.from('leads').select('nome, email, usos, criado_em').order('usos', { ascending: false })
   console.log('[admin/stats] topUsers criado_em attempt:', JSON.stringify({ error: topUsers.error, count: topUsers.data?.length }))
 
   if (topUsers.error) {
     topUsersDateField = 'created_at'
-    topUsers = await supabase.from('leads').select('nome, email, usos, created_at').order('usos', { ascending: false }).limit(10)
+    topUsers = await supabase.from('leads').select('nome, email, usos, created_at').order('usos', { ascending: false })
     console.log('[admin/stats] topUsers created_at fallback:', JSON.stringify({ error: topUsers.error, count: topUsers.data?.length }))
   }
   if (topUsers.error) errors['topUsers'] = topUsers.error
@@ -107,12 +107,23 @@ export async function GET(req: NextRequest) {
   console.log('[admin/stats] recentFeedbacks:', JSON.stringify({ error: recentFeedbacks.error, count: recentFeedbacks.data?.length, sample: recentFeedbacks.data?.[0] }))
   if (recentFeedbacks.error) errors['recentFeedbacks'] = recentFeedbacks.error
 
+  // ── RECENT DEBATES (questions from feedbacks) ─────────────
+  const recentDebates = await supabase.from('feedbacks').select('email, questao, rating, criado_em').order('criado_em', { ascending: false }).limit(10)
+  console.log('[admin/stats] recentDebates:', JSON.stringify({ error: recentDebates.error, count: recentDebates.data?.length }))
+  if (recentDebates.error) errors['recentDebates'] = recentDebates.error
+
   // ── COMPUTE ───────────────────────────────────────────────
   const totalDebates = usosData.data?.reduce((sum, r) => sum + (r.usos || 0), 0) ?? 0
   const avgRating =
     ratingsData.data && ratingsData.data.length > 0
       ? Math.round((ratingsData.data.reduce((sum: number, r: { rating: number }) => sum + (r.rating || 0), 0) / ratingsData.data.length) * 10) / 10
       : 0
+
+  const retention = {
+    onetime: usosData.data?.filter((u: { usos: number }) => u.usos === 1).length || 0,
+    returning: usosData.data?.filter((u: { usos: number }) => u.usos >= 2 && u.usos <= 3).length || 0,
+    power: usosData.data?.filter((u: { usos: number }) => u.usos >= 4).length || 0,
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const topUsersFormatted = (topUsers.data ?? []).map((u: any) => ({
@@ -131,6 +142,8 @@ export async function GET(req: NextRequest) {
     debatesPerDay: groupByDate((feedbacksWithDates.data ?? []) as Record<string, string>[], feedbacksDateField, 14),
     topUsers: topUsersFormatted,
     recentFeedbacks: recentFeedbacks.data ?? [],
+    recentDebates: recentDebates.data ?? [],
+    retention,
     ratingDistribution: [5, 4, 3, 2, 1].map(r => ({
       rating: r,
       count: ratingsData.data?.filter((d: { rating: number }) => d.rating === r).length ?? 0,
