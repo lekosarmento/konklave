@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Konklave
 
-## Getting Started
+**Convoque um conselho de IAs para debater a sua decisão.**
 
-First, run the development server:
+Você faz uma pergunta difícil e escolhe quem senta à mesa: modelos de IA (Claude, GPT, Gemini, Grok, DeepSeek…), especialistas (o Cético, o Pragmático, o Psicólogo…) e grandes pensadores (Sócrates, Maquiavel, Sun Tzu, Taleb, Buffett…). Eles opinam, rebatem uns aos outros em rodadas e, no fim, um presidente do conselho entrega o veredito.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+🔗 **Demo:** [konklave-iota.vercel.app](https://konklave-iota.vercel.app)
+
+<!-- TODO: adicionar um print ou GIF do debate em docs/preview.png -->
+<!-- ![Konklave](docs/preview.png) -->
+
+---
+
+## Como funciona
+
+```mermaid
+flowchart LR
+    Q[Pergunta + membros escolhidos] --> O[1. Opiniões<br/>em paralelo]
+    O --> D[2. Debate<br/>cada um reage aos outros]
+    D --> R[3. Réplica<br/>opcional]
+    R --> T[4. Tréplica<br/>opcional]
+    T --> V[5. Veredito<br/>presidente do conselho]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Opiniões:** cada membro responde de forma independente, todos em paralelo.
+2. **Debate:** cada membro lê o que os outros disseram e reage.
+3. **Réplica e tréplica (opcionais):** rodadas extras para aprofundar os pontos de conflito.
+4. **Veredito:** um único modelo, no papel de presidente, consolida o debate em uma recomendação.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Entre as rodadas, uma rota utilitária mede a convergência do grupo, aponta o membro mais divergente e ajuda a eleger o presidente.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Os 29 membros
 
-## Learn More
+| Grupo | Membros |
+|---|---|
+| **Modelos** (8) | Claude, GPT-4o, Gemini, Grok, Perplexity, DeepSeek, Kimi, Qwen |
+| **Especialistas** (7) | Cético, Visionário, Pragmático, Popular, Psicólogo, Historiador, Leigo |
+| **Grandes mentes** (14) | Sócrates, Maquiavel, Sun Tzu, Marco Aurélio, Nietzsche, Buda, Jung, Da Vinci, Steve Jobs, Warren Buffett, Eckhart Tolle, Nassim Taleb, Jorge Paulo Lemann, Einstein |
 
-To learn more about Next.js, take a look at the following resources:
+Cada membro tem um system prompt próprio, com estilo de raciocínio, jeito de discordar e **ponto cego declarado**. Assim os debates não viram consenso morno. Ver [`lib/personas.ts`](lib/personas.ts).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Decisões técnicas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Um gateway para todos os modelos:** todas as chamadas passam pelo [OpenRouter](https://openrouter.ai), o que permite misturar provedores sem integrar oito SDKs diferentes.
+- **Chamadas paralelas por membro:** cada fase dispara os membros com `Promise.all`, e o frontend mostra cada resposta assim que ela chega, reordenando os cards pela ordem de chegada.
+- **Fallback de modelo:** em caso de timeout ou modelo indisponível (404), a chamada é refeita com uma lista de modelos alternativos ([`lib/openrouter.ts`](lib/openrouter.ts)).
+- **Modos de velocidade** (`fast`, `normal`, `deep`) ajustam profundidade e custo do debate.
+- **Chave de API só no servidor:** a chave nunca chega ao navegador, porque as chamadas de modelo ficam em Route Handlers do Next.js.
 
-## Deploy on Vercel
+## Funcionalidades além do debate
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Cadastro de usuários e controle de uso (Supabase)
+- Página de planos
+- Exportação do veredito como imagem
+- Painel admin com feedbacks, exportação CSV, gráfico de retenção e últimos debates
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Framer Motion · Supabase · OpenRouter · Vercel
+
+## Rodando localmente
+
+```bash
+git clone https://github.com/lekosarmento/konklave.git
+cd konklave
+npm install
+cp .env.example .env.local   # preencha as variáveis abaixo
+npm run dev
+```
+
+| Variável | Para quê |
+|---|---|
+| `OPENROUTER_API_KEY` | Chamadas aos modelos |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública do Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Operações de servidor (cadastro, uso, admin) |
+| `ADMIN_PASSWORD` | Acesso ao painel `/admin` |
+| `NEXT_PUBLIC_APP_URL` | URL pública do app (usada no header do OpenRouter) |
+
+## Estrutura
+
+```
+app/
+  api/council/   # uma rota por fase: opinions, debate, replica, treplica, verdict, utility
+  api/leads/     # cadastro e controle de uso
+  api/admin/     # métricas do painel
+  council/       # tela do debate
+  admin/         # painel admin
+components/council/CouncilApp.tsx   # orquestra as fases no cliente
+lib/personas.ts                     # os 29 membros e seus prompts
+lib/openrouter.ts                   # cliente OpenRouter com retry e fallback
+```
+
+## Próximos passos
+
+- [ ] Streaming das respostas token a token
+- [ ] Histórico de sessões por usuário
+- [ ] Testes para a orquestração das fases
