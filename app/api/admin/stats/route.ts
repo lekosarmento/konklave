@@ -22,7 +22,11 @@ function groupByDate(data: Record<string, string>[], field: string, days: number
 }
 
 export async function GET(req: NextRequest) {
-  const adminPassword = process.env.ADMIN_PASSWORD || 'konklave2024'
+  const adminPassword = process.env.ADMIN_PASSWORD
+  if (!adminPassword) {
+    console.error('[admin/stats] ADMIN_PASSWORD not configured')
+    return NextResponse.json({ error: 'Admin não configurado' }, { status: 503 })
+  }
   if (req.headers.get('x-admin-password') !== adminPassword) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -41,7 +45,6 @@ export async function GET(req: NextRequest) {
 
   // ── TABLE STRUCTURE CHECK ─────────────────────────────────
   const tableCheck = await supabase.from('leads').select('*').limit(3)
-  console.log('[admin/stats] leads sample:', JSON.stringify(tableCheck))
   if (tableCheck.error) errors['tableCheck'] = tableCheck.error
 
   // ── LEADS COUNT ───────────────────────────────────────────

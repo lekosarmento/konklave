@@ -18,7 +18,7 @@ export async function callOpenRouter(
 ): Promise<string> {
     const apiKey = process.env.OPENROUTER_API_KEY
     if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured')
-    console.log(`[openrouter] key=${apiKey.slice(0, 10)}... model=${model} timeout=${timeoutMs}ms`)
+    console.log(`[openrouter] model=${model} timeout=${timeoutMs}ms`)
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
